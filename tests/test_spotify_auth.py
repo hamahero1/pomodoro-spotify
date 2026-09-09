@@ -2,6 +2,14 @@ def test_login_redirects_to_spotify_authorize(client):
     resp = client.get("/spotify/login")
     assert resp.status_code == 302
     assert resp.headers["Location"].startswith("https://accounts.spotify.com/authorize")
+    assert "show_dialog=false" in resp.headers["Location"]
+
+
+def test_login_can_force_consent_dialog(client):
+    # Used by the "Reconnect Spotify" flow after adding new scopes, so
+    # Spotify actually re-prompts instead of silently reusing an old grant.
+    resp = client.get("/spotify/login?show_dialog=true")
+    assert "show_dialog=true" in resp.headers["Location"]
 
 
 def test_callback_rejects_mismatched_state(client):

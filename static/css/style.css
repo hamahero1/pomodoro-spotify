@@ -12,6 +12,7 @@
   --accent: #1db954;
   --accent-hover: #22e065;
   --accent-dim: #1db95422;
+  --accent-soft: #7fcf9f;
   --danger: #ff5c5c;
   --radius-lg: 20px;
   --radius-md: 14px;
@@ -330,10 +331,10 @@ textarea:focus {
   font-size: 0.86rem;
 }
 .lyrics-box.lyrics-synced .lyric-line.current-line {
-  color: var(--text-dim);
+  color: var(--accent-soft);
 }
 .lyrics-box.lyrics-synced .lyric-word {
-  transition: color var(--transition), font-weight var(--transition);
+  transition: color 320ms ease, font-weight 320ms ease;
 }
 .lyrics-box.lyrics-synced .lyric-word.active-word {
   color: var(--accent);
@@ -638,6 +639,7 @@ textarea:focus {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 .calendar-header {
   display: flex;

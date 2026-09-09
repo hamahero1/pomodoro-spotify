@@ -285,7 +285,9 @@ const SpotifyPanel = {
           <button id="browser-reconnect" class="btn btn-primary" type="button" style="margin-top:0.6rem;">Reconnect Spotify</button>
         </li>`;
       document.getElementById("browser-reconnect").addEventListener("click", () => {
-        window.location.href = "/spotify/login";
+        // Force Spotify's consent screen so the new (playlist) scope is
+        // actually re-prompted, instead of possibly reusing an old grant.
+        window.location.href = "/spotify/login?show_dialog=true";
       });
       return;
     }

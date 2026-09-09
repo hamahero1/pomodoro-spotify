@@ -22,11 +22,17 @@ def _cfg():
 def login():
     state = secrets.token_urlsafe(24)
     session[SESSION_STATE_KEY] = state
+    # ?show_dialog=true forces Spotify's consent screen to appear even if
+    # this browser already has an active authorization — used when
+    # reconnecting after adding new scopes, so the new permission is
+    # actually re-prompted instead of silently reusing an old grant.
+    show_dialog = request.args.get("show_dialog", "false").lower() == "true"
     url = client.build_authorize_url(
         client_id=_cfg()["SPOTIFY_CLIENT_ID"],
         redirect_uri=_cfg()["SPOTIFY_REDIRECT_URI"],
         scopes=_cfg()["SPOTIFY_SCOPES"],
         state=state,
+        show_dialog=show_dialog,
     )
     return redirect(url)
 

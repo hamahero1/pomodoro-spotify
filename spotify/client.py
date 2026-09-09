@@ -20,14 +20,16 @@ class SpotifyAPIError(RuntimeError):
         self.status_code = status_code
 
 
-def build_authorize_url(client_id: str, redirect_uri: str, scopes: str, state: str) -> str:
+def build_authorize_url(
+    client_id: str, redirect_uri: str, scopes: str, state: str, show_dialog: bool = False
+) -> str:
     params = {
         "client_id": client_id,
         "response_type": "code",
         "redirect_uri": redirect_uri,
         "scope": scopes,
         "state": state,
-        "show_dialog": "false",
+        "show_dialog": "true" if show_dialog else "false",
     }
     return f"{AUTHORIZE_URL}?{urlencode(params)}"
 
