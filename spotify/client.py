@@ -15,6 +15,10 @@ REQUEST_TIMEOUT = 8  # seconds — never let an upstream call hang the app forev
 class SpotifyAPIError(RuntimeError):
     """Raised when a call to Spotify's API fails."""
 
+    def __init__(self, message: str, status_code: int | None = None):
+        super().__init__(message)
+        self.status_code = status_code
+
 
 def build_authorize_url(client_id: str, redirect_uri: str, scopes: str, state: str) -> str:
     params = {
@@ -42,7 +46,7 @@ def exchange_code_for_token(
         timeout=REQUEST_TIMEOUT,
     )
     if resp.status_code != 200:
-        raise SpotifyAPIError(f"Token exchange failed: {resp.status_code} {resp.text}")
+        raise SpotifyAPIError(f"Token exchange failed: {resp.status_code} {resp.text}", resp.status_code)
     return resp.json()
 
 
@@ -54,7 +58,7 @@ def refresh_access_token(refresh_token: str, client_id: str, client_secret: str)
         timeout=REQUEST_TIMEOUT,
     )
     if resp.status_code != 200:
-        raise SpotifyAPIError(f"Token refresh failed: {resp.status_code} {resp.text}")
+        raise SpotifyAPIError(f"Token refresh failed: {resp.status_code} {resp.text}", resp.status_code)
     return resp.json()
 
 
@@ -72,9 +76,9 @@ def get_currently_playing(access_token: str) -> dict | None:
     if resp.status_code == 204 or not resp.content:
         return None
     if resp.status_code == 401:
-        raise SpotifyAPIError("Access token expired or invalid")
+        raise SpotifyAPIError("Access token expired or invalid", 401)
     if resp.status_code != 200:
-        raise SpotifyAPIError(f"Now-playing lookup failed: {resp.status_code} {resp.text}")
+        raise SpotifyAPIError(f"Now-playing lookup failed: {resp.status_code} {resp.text}", resp.status_code)
 
     data = resp.json()
     item = data.get("item")
@@ -101,7 +105,7 @@ def transfer_playback(access_token: str, device_id: str, play: bool = True) -> N
         timeout=REQUEST_TIMEOUT,
     )
     if resp.status_code not in (200, 202, 204):
-        raise SpotifyAPIError(f"Transfer playback failed: {resp.status_code} {resp.text}")
+        raise SpotifyAPIError(f"Transfer playback failed: {resp.status_code} {resp.text}", resp.status_code)
 
 
 def get_user_playlists(access_token: str, limit: int = 50) -> list[dict]:
@@ -112,9 +116,9 @@ def get_user_playlists(access_token: str, limit: int = 50) -> list[dict]:
         timeout=REQUEST_TIMEOUT,
     )
     if resp.status_code == 401:
-        raise SpotifyAPIError("Access token expired or invalid")
+        raise SpotifyAPIError("Access token expired or invalid", 401)
     if resp.status_code != 200:
-        raise SpotifyAPIError(f"Playlists lookup failed: {resp.status_code} {resp.text}")
+        raise SpotifyAPIError(f"Playlists lookup failed: {resp.status_code} {resp.text}", resp.status_code)
 
     items = resp.json().get("items", [])
     return [
@@ -138,9 +142,9 @@ def get_playlist_tracks(access_token: str, playlist_id: str, limit: int = 100) -
         timeout=REQUEST_TIMEOUT,
     )
     if resp.status_code == 401:
-        raise SpotifyAPIError("Access token expired or invalid")
+        raise SpotifyAPIError("Access token expired or invalid", 401)
     if resp.status_code != 200:
-        raise SpotifyAPIError(f"Playlist tracks lookup failed: {resp.status_code} {resp.text}")
+        raise SpotifyAPIError(f"Playlist tracks lookup failed: {resp.status_code} {resp.text}", resp.status_code)
 
     items = resp.json().get("items", [])
     tracks = []
@@ -170,7 +174,7 @@ def play_track(access_token: str, uri: str, device_id: str | None = None) -> Non
         timeout=REQUEST_TIMEOUT,
     )
     if resp.status_code not in (200, 202, 204):
-        raise SpotifyAPIError(f"Play track failed: {resp.status_code} {resp.text}")
+        raise SpotifyAPIError(f"Play track failed: {resp.status_code} {resp.text}", resp.status_code)
 
 
 def player_command(access_token: str, action: str, device_id: str | None = None) -> None:
@@ -185,4 +189,4 @@ def player_command(access_token: str, action: str, device_id: str | None = None)
         timeout=REQUEST_TIMEOUT,
     )
     if resp.status_code not in (200, 202, 204):
-        raise SpotifyAPIError(f"Player command '{action}' failed: {resp.status_code} {resp.text}")
+        raise SpotifyAPIError(f"Player command '{action}' failed: {resp.status_code} {resp.text}", resp.status_code)

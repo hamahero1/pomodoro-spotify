@@ -22,8 +22,10 @@ async function apiFetch(path, options = {}) {
     data = null;
   }
   if (!resp.ok) {
-    const message = (data && data.error) || `Request failed (${resp.status})`;
-    throw new Error(message);
+    const message = (data && (data.message || data.error)) || `Request failed (${resp.status})`;
+    const err = new Error(message);
+    err.code = data && data.error; // e.g. "insufficient_scope", "not_connected"
+    throw err;
   }
   return data;
 }

@@ -94,6 +94,12 @@ input {
 /* ---------- Grid layout ---------- */
 .app-grid {
   flex: 1;
+  /* Without this, a flex item's default min-height is its content's
+     natural size, not 0 — so a tall inner box (e.g. many lyric lines)
+     would push .app-grid (and the whole page) taller instead of scrolling
+     inside its own box, forcing the whole page to scroll and the other
+     panels out of view. */
+  min-height: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
@@ -309,23 +315,29 @@ textarea:focus {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* Karaoke-style synced lyrics */
+/* Karaoke-style synced lyrics — only the current WORD is highlighted, not
+ * the whole line as a solid block. The current line is just slightly
+ * brighter than the rest, for context. */
 .lyrics-box.lyrics-synced {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
   scroll-behavior: smooth;
 }
 .lyrics-box.lyrics-synced .lyric-line {
   color: var(--text-faint);
-  transition: color var(--transition), transform var(--transition);
+  transition: color var(--transition);
   font-size: 0.86rem;
 }
-.lyrics-box.lyrics-synced .lyric-line.active {
+.lyrics-box.lyrics-synced .lyric-line.current-line {
+  color: var(--text-dim);
+}
+.lyrics-box.lyrics-synced .lyric-word {
+  transition: color var(--transition), font-weight var(--transition);
+}
+.lyrics-box.lyrics-synced .lyric-word.active-word {
   color: var(--accent);
   font-weight: 700;
-  font-size: 0.95rem;
-  transform: translateX(2px);
 }
 
 /* Playlist browser (in-panel, replaces now-playing/lyrics while open) */

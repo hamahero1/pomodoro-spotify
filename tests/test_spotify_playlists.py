@@ -74,3 +74,16 @@ def test_play_track_requires_uri(client):
     _connect(client)
     resp = client.put("/api/spotify/player/play-track", json={}, headers=api_headers())
     assert resp.status_code == 400
+
+
+def test_playlists_403_reports_insufficient_scope(client):
+    """A stale session token (missing the playlist scopes) should tell the
+    frontend to reconnect, not just say 'spotify_error'."""
+    from spotify.client import SpotifyAPIError
+
+    _connect(client)
+    with patch("spotify.client.get_user_playlists") as mock_playlists:
+        mock_playlists.side_effect = SpotifyAPIError("Playlists lookup failed: 403 ...", 403)
+        resp = client.get("/api/spotify/playlists")
+    assert resp.status_code == 403
+    assert resp.get_json()["error"] == "insufficient_scope"

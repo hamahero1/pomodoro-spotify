@@ -124,6 +124,25 @@ def get_valid_access_token() -> str | None:
     return session[SESSION_TOKENS_KEY]["access_token"]
 
 
+def _spotify_error_response(e: client.SpotifyAPIError, action: str):
+    """Logs the real Spotify error server-side and returns a JSON response
+    that's actually useful to the frontend instead of a generic string."""
+    current_app.logger.error("Spotify API error during %s: %s", action, e)
+    if e.status_code == 403:
+        # Almost always: the current session's access token was granted
+        # before a scope this endpoint needs was added — reconnecting
+        # re-runs the OAuth flow and picks up the new scope.
+        return jsonify(
+            {
+                "error": "insufficient_scope",
+                "message": "Reconnect Spotify to grant the permissions this needs.",
+            }
+        ), 403
+    if e.status_code == 401:
+        return jsonify({"error": "not_connected"}), 401
+    return jsonify({"error": "spotify_error", "message": str(e)}), 502
+
+
 # ---- JSON API used by the frontend ----------------------------------------
 
 
@@ -148,8 +167,8 @@ def now_playing():
         return jsonify({"error": "not_connected"}), 401
     try:
         track = client.get_currently_playing(access_token)
-    except client.SpotifyAPIError:
-        return jsonify({"error": "spotify_error"}), 502
+    except client.SpotifyAPIError as e:
+        return _spotify_error_response(e, "now-playing")
     return jsonify({"track": track})
 
 
@@ -163,8 +182,8 @@ def player_action(action: str):
     device_id = request.args.get("device_id")
     try:
         client.player_command(access_token, action, device_id)
-    except client.SpotifyAPIError:
-        return jsonify({"error": "spotify_error"}), 502
+    except client.SpotifyAPIError as e:
+        return _spotify_error_response(e, f"player {action}")
     return jsonify({"ok": True})
 
 
@@ -179,8 +198,8 @@ def player_transfer():
         return jsonify({"error": "missing_device_id"}), 400
     try:
         client.transfer_playback(access_token, device_id)
-    except client.SpotifyAPIError:
-        return jsonify({"error": "spotify_error"}), 502
+    except client.SpotifyAPIError as e:
+        return _spotify_error_response(e, "player transfer")
     return jsonify({"ok": True})
 
 
@@ -191,8 +210,8 @@ def playlists():
         return jsonify({"error": "not_connected"}), 401
     try:
         items = client.get_user_playlists(access_token)
-    except client.SpotifyAPIError:
-        return jsonify({"error": "spotify_error"}), 502
+    except client.SpotifyAPIError as e:
+        return _spotify_error_response(e, "playlists lookup")
     return jsonify({"playlists": items})
 
 
@@ -203,8 +222,8 @@ def playlist_tracks(playlist_id: str):
         return jsonify({"error": "not_connected"}), 401
     try:
         tracks = client.get_playlist_tracks(access_token, playlist_id)
-    except client.SpotifyAPIError:
-        return jsonify({"error": "spotify_error"}), 502
+    except client.SpotifyAPIError as e:
+        return _spotify_error_response(e, "playlist tracks lookup")
     return jsonify({"tracks": tracks})
 
 
@@ -219,6 +238,6 @@ def player_play_track():
         return jsonify({"error": "missing_uri"}), 400
     try:
         client.play_track(access_token, uri, data.get("device_id"))
-    except client.SpotifyAPIError:
-        return jsonify({"error": "spotify_error"}), 502
+    except client.SpotifyAPIError as e:
+        return _spotify_error_response(e, "play track")
     return jsonify({"ok": True})

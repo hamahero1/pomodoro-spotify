@@ -167,10 +167,23 @@ const SpotifyPanel = {
   renderSyncedLyricsLines() {
     this.lyricsBox.classList.add("lyrics-synced");
     this.lyricsBox.innerHTML = "";
+    this._activeWordEl = null;
     this.syncedLines.forEach((line) => {
       const div = document.createElement("div");
       div.className = "lyric-line";
-      div.textContent = line.text;
+      // Split into words (keeping whitespace as plain text nodes, so spacing
+      // is preserved) — this lets us highlight just the current WORD rather
+      // than lighting up the entire line as one solid block.
+      line.text.split(/(\s+)/).forEach((token) => {
+        if (token.trim() === "") {
+          div.appendChild(document.createTextNode(token));
+        } else {
+          const span = document.createElement("span");
+          span.className = "lyric-word";
+          span.textContent = token;
+          div.appendChild(span);
+        }
+      });
       this.lyricsBox.appendChild(div);
     });
   },
@@ -184,16 +197,36 @@ const SpotifyPanel = {
       if (this.syncedLines[i].timeMs <= estimatedMs) idx = i;
       else break;
     }
-    if (idx === this.activeLineIndex) return;
-    this.activeLineIndex = idx;
+    if (idx < 0) return;
 
-    const children = this.lyricsBox.children;
-    for (let i = 0; i < children.length; i++) {
-      children[i].classList.toggle("active", i === idx);
+    const lines = this.lyricsBox.children;
+    if (idx !== this.activeLineIndex) {
+      this.activeLineIndex = idx;
+      for (let i = 0; i < lines.length; i++) {
+        lines[i].classList.toggle("current-line", i === idx);
+      }
+      if (lines[idx]) lines[idx].scrollIntoView({ block: "center", behavior: "smooth" });
     }
-    if (idx >= 0 && children[idx]) {
-      children[idx].scrollIntoView({ block: "center", behavior: "smooth" });
-    }
+
+    // lrclib only gives one timestamp per LINE, not per word — so we
+    // estimate the current word by assuming words are evenly spaced across
+    // the time until the next line starts (a common karaoke approximation
+    // when word-level timing isn't available).
+    const lineEl = lines[idx];
+    if (!lineEl) return;
+    const words = lineEl.querySelectorAll(".lyric-word");
+    if (words.length === 0) return;
+
+    const lineStart = this.syncedLines[idx].timeMs;
+    const lineEnd = idx + 1 < this.syncedLines.length ? this.syncedLines[idx + 1].timeMs : lineStart + 4000;
+    const fraction = Math.max(0, Math.min(1, (estimatedMs - lineStart) / Math.max(1, lineEnd - lineStart)));
+    const activeWordIdx = Math.min(words.length - 1, Math.floor(fraction * words.length));
+    const activeWordEl = words[activeWordIdx];
+
+    if (activeWordEl === this._activeWordEl) return;
+    if (this._activeWordEl) this._activeWordEl.classList.remove("active-word");
+    activeWordEl.classList.add("active-word");
+    this._activeWordEl = activeWordEl;
   },
 
   emptyLyricsHTML(message) {
@@ -240,8 +273,23 @@ const SpotifyPanel = {
       const data = await apiFetch("/api/spotify/playlists");
       this.renderPlaylistList(data.playlists);
     } catch (e) {
-      this.browserList.innerHTML = `<li class="browser-loading">Couldn't load playlists: ${escapeHtml(e.message)}</li>`;
+      this.renderBrowserError(e);
     }
+  },
+
+  renderBrowserError(e) {
+    if (e.code === "insufficient_scope") {
+      this.browserList.innerHTML = `
+        <li class="browser-loading">
+          This needs permissions your current session doesn't have yet.
+          <button id="browser-reconnect" class="btn btn-primary" type="button" style="margin-top:0.6rem;">Reconnect Spotify</button>
+        </li>`;
+      document.getElementById("browser-reconnect").addEventListener("click", () => {
+        window.location.href = "/spotify/login";
+      });
+      return;
+    }
+    this.browserList.innerHTML = `<li class="browser-loading">Couldn't load this: ${escapeHtml(e.message)}</li>`;
   },
 
   renderPlaylistList(playlists) {
@@ -272,7 +320,7 @@ const SpotifyPanel = {
       const data = await apiFetch(`/api/spotify/playlists/${encodeURIComponent(playlistId)}/tracks`);
       this.renderTrackList(data.tracks);
     } catch (e) {
-      this.browserList.innerHTML = `<li class="browser-loading">Couldn't load songs: ${escapeHtml(e.message)}</li>`;
+      this.renderBrowserError(e);
     }
   },
 
