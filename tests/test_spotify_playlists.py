@@ -106,6 +106,9 @@ def test_playlist_tracks_403_with_scope_granted_reports_restricted(client):
     data = resp.get_json()
     assert data["error"] == "playlist_restricted"
     assert "Content not accessible" in data["message"]
+    # Regression check: Spotify's raw (often unhelpful, e.g. just
+    # "Forbidden") message must never replace our actual explanation.
+    assert "algorithmic" in data["message"] or "editorial" in data["message"]
 
 
 def test_status_exposes_granted_scopes(client):

@@ -157,13 +157,22 @@ def _spotify_error_response(e: client.SpotifyAPIError, action: str):
         # not a permissions problem. It's most often Spotify itself blocking
         # API access to algorithmic/auto-generated playlists (Discover
         # Weekly, Daily Mix, Release Radar, etc.), regardless of scope.
+        # Spotify's own message here is usually just the unhelpful word
+        # "Forbidden" — show our explanation FIRST, with Spotify's raw
+        # reason appended for transparency, never instead of it.
+        explanation = (
+            "Spotify is blocking access to this playlist's tracks — this usually "
+            "happens with algorithmic/auto-generated playlists (Discover Weekly, "
+            "Daily Mix, Release Radar, etc.) or certain Spotify-curated editorial "
+            "playlists, regardless of permissions granted. Try a playlist you "
+            "created or saved yourself instead."
+        )
+        if e.spotify_message:
+            explanation += f' (Spotify said: "{e.spotify_message}")'
         return jsonify(
             {
                 "error": "playlist_restricted",
-                "message": e.spotify_message
-                or "Spotify is blocking access to this playlist's tracks — this often "
-                "happens with algorithmic playlists like Discover Weekly, Daily Mix, "
-                "or Release Radar. Try a playlist you created or saved yourself.",
+                "message": explanation,
                 "granted_scopes": granted,
             }
         ), 403
