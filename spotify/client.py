@@ -15,9 +15,18 @@ REQUEST_TIMEOUT = 8  # seconds — never let an upstream call hang the app forev
 class SpotifyAPIError(RuntimeError):
     """Raised when a call to Spotify's API fails."""
 
-    def __init__(self, message: str, status_code: int | None = None):
+    def __init__(self, message: str, status_code: int | None = None, spotify_message: str | None = None):
         super().__init__(message)
         self.status_code = status_code
+        self.spotify_message = spotify_message
+
+
+def _extract_spotify_message(resp) -> str | None:
+    """Spotify error bodies are usually {"error": {"status":.., "message":..}}."""
+    try:
+        return resp.json().get("error", {}).get("message")
+    except Exception:
+        return None
 
 
 def build_authorize_url(
@@ -146,7 +155,11 @@ def get_playlist_tracks(access_token: str, playlist_id: str, limit: int = 100) -
     if resp.status_code == 401:
         raise SpotifyAPIError("Access token expired or invalid", 401)
     if resp.status_code != 200:
-        raise SpotifyAPIError(f"Playlist tracks lookup failed: {resp.status_code} {resp.text}", resp.status_code)
+        raise SpotifyAPIError(
+            f"Playlist tracks lookup failed: {resp.status_code} {resp.text}",
+            resp.status_code,
+            spotify_message=_extract_spotify_message(resp),
+        )
 
     items = resp.json().get("items", [])
     tracks = []
@@ -177,6 +190,25 @@ def play_track(access_token: str, uri: str, device_id: str | None = None) -> Non
     )
     if resp.status_code not in (200, 202, 204):
         raise SpotifyAPIError(f"Play track failed: {resp.status_code} {resp.text}", resp.status_code)
+
+
+def seek_to_position(access_token: str, position_ms: int, device_id: str | None = None) -> None:
+    """Jumps the currently playing track to a position (click-to-seek on lyrics)."""
+    params = {"position_ms": max(0, position_ms)}
+    if device_id:
+        params["device_id"] = device_id
+    resp = requests.put(
+        f"{API_BASE}/me/player/seek",
+        headers=_auth_headers(access_token),
+        params=params,
+        timeout=REQUEST_TIMEOUT,
+    )
+    if resp.status_code not in (200, 202, 204):
+        raise SpotifyAPIError(
+            f"Seek failed: {resp.status_code} {resp.text}",
+            resp.status_code,
+            spotify_message=_extract_spotify_message(resp),
+        )
 
 
 def player_command(access_token: str, action: str, device_id: str | None = None) -> None:

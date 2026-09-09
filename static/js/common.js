@@ -25,6 +25,7 @@ async function apiFetch(path, options = {}) {
     const message = (data && (data.message || data.error)) || `Request failed (${resp.status})`;
     const err = new Error(message);
     err.code = data && data.error; // e.g. "insufficient_scope", "not_connected"
+    err.data = data || {};
     throw err;
   }
   return data;

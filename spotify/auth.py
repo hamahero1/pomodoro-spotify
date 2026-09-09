@@ -89,6 +89,10 @@ def _store_tokens(token_data: dict) -> None:
     tokens = session.get(SESSION_TOKENS_KEY, {})
     tokens["access_token"] = token_data["access_token"]
     tokens["expires_at"] = time.time() + token_data.get("expires_in", 3600) - 30
+    # What Spotify actually granted — may be narrower than what we asked
+    # for. Exposed via /api/spotify/status so a "why is this 403ing" can be
+    # answered by looking at this instead of guessing.
+    tokens["scope"] = token_data.get("scope", "")
     # Spotify only returns a refresh_token on the *first* authorization.
     if token_data.get("refresh_token"):
         tokens["refresh_token"] = token_data["refresh_token"]
@@ -133,20 +137,39 @@ def get_valid_access_token() -> str | None:
 def _spotify_error_response(e: client.SpotifyAPIError, action: str):
     """Logs the real Spotify error server-side and returns a JSON response
     that's actually useful to the frontend instead of a generic string."""
-    current_app.logger.error("Spotify API error during %s: %s", action, e)
+    current_app.logger.error(
+        "Spotify API error during %s: %s (spotify_message=%r)", action, e, e.spotify_message
+    )
     if e.status_code == 403:
-        # Almost always: the current session's access token was granted
-        # before a scope this endpoint needs was added — reconnecting
-        # re-runs the OAuth flow and picks up the new scope.
+        granted = (session.get(SESSION_TOKENS_KEY) or {}).get("scope", "")
+        has_playlist_scope = "playlist-read-private" in granted
+        if not has_playlist_scope:
+            # The current session's token was granted before playlist scopes
+            # existed — reconnecting re-runs OAuth and picks up the new scope.
+            return jsonify(
+                {
+                    "error": "insufficient_scope",
+                    "message": "Reconnect Spotify to grant the permissions this needs.",
+                    "granted_scopes": granted,
+                }
+            ), 403
+        # We DO have the playlist scope, yet Spotify still said 403 — this is
+        # not a permissions problem. It's most often Spotify itself blocking
+        # API access to algorithmic/auto-generated playlists (Discover
+        # Weekly, Daily Mix, Release Radar, etc.), regardless of scope.
         return jsonify(
             {
-                "error": "insufficient_scope",
-                "message": "Reconnect Spotify to grant the permissions this needs.",
+                "error": "playlist_restricted",
+                "message": e.spotify_message
+                or "Spotify is blocking access to this playlist's tracks — this often "
+                "happens with algorithmic playlists like Discover Weekly, Daily Mix, "
+                "or Release Radar. Try a playlist you created or saved yourself.",
+                "granted_scopes": granted,
             }
         ), 403
     if e.status_code == 401:
         return jsonify({"error": "not_connected"}), 401
-    return jsonify({"error": "spotify_error", "message": str(e)}), 502
+    return jsonify({"error": "spotify_error", "message": e.spotify_message or str(e)}), 502
 
 
 # ---- JSON API used by the frontend ----------------------------------------
@@ -154,7 +177,9 @@ def _spotify_error_response(e: client.SpotifyAPIError, action: str):
 
 @spotify_bp.route("/api/spotify/status")
 def status():
-    return jsonify({"connected": get_valid_access_token() is not None})
+    connected = get_valid_access_token() is not None
+    granted = (session.get(SESSION_TOKENS_KEY) or {}).get("scope", "") if connected else ""
+    return jsonify({"connected": connected, "granted_scopes": granted})
 
 
 @spotify_bp.route("/api/spotify/token")
@@ -206,6 +231,27 @@ def player_transfer():
         client.transfer_playback(access_token, device_id)
     except client.SpotifyAPIError as e:
         return _spotify_error_response(e, "player transfer")
+    return jsonify({"ok": True})
+
+
+@spotify_bp.route("/api/spotify/player/seek", methods=["PUT"])
+def player_seek():
+    """Click-to-seek on lyrics: jump playback to a lyric line's timestamp."""
+    access_token = get_valid_access_token()
+    if not access_token:
+        return jsonify({"error": "not_connected"}), 401
+    data = request.get_json(silent=True) or {}
+    position_ms = data.get("position_ms")
+    try:
+        position_ms = int(position_ms)
+        if position_ms < 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid_position_ms"}), 400
+    try:
+        client.seek_to_position(access_token, position_ms, data.get("device_id"))
+    except client.SpotifyAPIError as e:
+        return _spotify_error_response(e, "seek")
     return jsonify({"ok": True})
 
 

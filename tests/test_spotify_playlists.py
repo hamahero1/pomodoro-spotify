@@ -21,12 +21,13 @@ def test_play_track_requires_connection(client):
     assert resp.status_code in (404, 405)
 
 
-def _connect(client):
+def _connect(client, scope=""):
     with patch("spotify.auth.client.exchange_code_for_token") as mock_exchange:
         mock_exchange.return_value = {
             "access_token": "fake-token",
             "refresh_token": "fake-refresh",
             "expires_in": 3600,
+            "scope": scope,
         }
         resp = client.get("/spotify/login")
         from urllib.parse import urlparse, parse_qs
@@ -81,9 +82,59 @@ def test_playlists_403_reports_insufficient_scope(client):
     frontend to reconnect, not just say 'spotify_error'."""
     from spotify.client import SpotifyAPIError
 
-    _connect(client)
+    _connect(client, scope="streaming user-read-email")  # no playlist scopes granted
     with patch("spotify.client.get_user_playlists") as mock_playlists:
         mock_playlists.side_effect = SpotifyAPIError("Playlists lookup failed: 403 ...", 403)
         resp = client.get("/api/spotify/playlists")
     assert resp.status_code == 403
     assert resp.get_json()["error"] == "insufficient_scope"
+
+
+def test_playlist_tracks_403_with_scope_granted_reports_restricted(client):
+    """If the playlist scope WAS granted and it still 403s, that's not a
+    permissions problem — most likely an algorithmic playlist Spotify
+    blocks regardless of scope. Should say so, not blame permissions."""
+    from spotify.client import SpotifyAPIError
+
+    _connect(client, scope="streaming playlist-read-private playlist-read-collaborative")
+    with patch("spotify.client.get_playlist_tracks") as mock_tracks:
+        mock_tracks.side_effect = SpotifyAPIError(
+            "Playlist tracks lookup failed: 403 ...", 403, spotify_message="Content not accessible"
+        )
+        resp = client.get("/api/spotify/playlists/p1/tracks")
+    assert resp.status_code == 403
+    data = resp.get_json()
+    assert data["error"] == "playlist_restricted"
+    assert "Content not accessible" in data["message"]
+
+
+def test_status_exposes_granted_scopes(client):
+    _connect(client, scope="streaming playlist-read-private")
+    resp = client.get("/api/spotify/status")
+    data = resp.get_json()
+    assert data["connected"] is True
+    assert "playlist-read-private" in data["granted_scopes"]
+
+
+def test_seek_requires_connection(client):
+    resp = client.put("/api/spotify/player/seek", json={"position_ms": 1000}, headers=api_headers())
+    assert resp.status_code == 401
+
+
+def test_seek_when_connected(client):
+    _connect(client)
+    with patch("spotify.client.seek_to_position") as mock_seek:
+        resp = client.put(
+            "/api/spotify/player/seek", json={"position_ms": 42000}, headers=api_headers()
+        )
+    assert resp.status_code == 200
+    mock_seek.assert_called_once()
+    assert mock_seek.call_args[0][1] == 42000
+
+
+def test_seek_rejects_invalid_position(client):
+    _connect(client)
+    resp = client.put(
+        "/api/spotify/player/seek", json={"position_ms": "not-a-number"}, headers=api_headers()
+    )
+    assert resp.status_code == 400

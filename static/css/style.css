@@ -123,7 +123,12 @@ input {
   flex-direction: column;
   min-height: 320px;
   transition: border-color var(--transition);
-  overflow: hidden;
+  /* Safety net: if ANY panel's content ever doesn't fit (short viewport,
+     more content than usual), it scrolls internally instead of silently
+     clipping or pushing the whole page taller. overflow-x stays hidden so
+     this never introduces a horizontal scrollbar. */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .panel:hover {
   border-color: var(--panel-border-hover);
@@ -326,9 +331,18 @@ textarea:focus {
   scroll-behavior: smooth;
 }
 .lyrics-box.lyrics-synced .lyric-line {
-  color: var(--text-faint);
+  /* Lighter than before so the surrounding words are actually readable —
+     only the active word needs to stand out, not the rest of the line. */
+  color: var(--text-dim);
   transition: color var(--transition);
   font-size: 0.86rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 0.15rem 0.3rem;
+  margin: 0 -0.3rem;
+}
+.lyrics-box.lyrics-synced .lyric-line:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 .lyrics-box.lyrics-synced .lyric-line.current-line {
   color: var(--accent-soft);

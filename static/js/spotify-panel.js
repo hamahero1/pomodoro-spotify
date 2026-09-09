@@ -184,8 +184,30 @@ const SpotifyPanel = {
           div.appendChild(span);
         }
       });
+      div.addEventListener("click", () => this.seekTo(line.timeMs));
       this.lyricsBox.appendChild(div);
     });
+  },
+
+  async seekTo(positionMs) {
+    // Click a lyric line to jump playback there — we only have line-level
+    // timing (not per-word), so this seeks to that line's start.
+    try {
+      await apiFetch("/api/spotify/player/seek", {
+        method: "PUT",
+        body: JSON.stringify({
+          position_ms: Math.round(positionMs),
+          device_id: typeof SpotifyPlayer !== "undefined" ? SpotifyPlayer.deviceId : null,
+        }),
+      });
+      // Resync our local playback-position clock immediately so the
+      // highlight doesn't wait for the next 6s poll to catch up.
+      this.progressAtSync = positionMs;
+      this.lastSyncAt = Date.now();
+      setTimeout(() => this.pollNowPlaying(), 300);
+    } catch (e) {
+      showToast("Couldn't seek — is Spotify open on a device? " + e.message, true);
+    }
   },
 
   tickLyrics() {
@@ -278,11 +300,15 @@ const SpotifyPanel = {
   },
 
   renderBrowserError(e) {
+    const scopes = (e.data && e.data.granted_scopes) || "";
+    const scopeDebugLine = `<div style="margin-top:0.5rem;font-size:0.7rem;color:var(--text-faint);">Granted permissions: ${escapeHtml(scopes) || "(none)"}</div>`;
+
     if (e.code === "insufficient_scope") {
       this.browserList.innerHTML = `
         <li class="browser-loading">
           This needs permissions your current session doesn't have yet.
           <button id="browser-reconnect" class="btn btn-primary" type="button" style="margin-top:0.6rem;">Reconnect Spotify</button>
+          ${scopeDebugLine}
         </li>`;
       document.getElementById("browser-reconnect").addEventListener("click", () => {
         // Force Spotify's consent screen so the new (playlist) scope is
@@ -291,7 +317,17 @@ const SpotifyPanel = {
       });
       return;
     }
-    this.browserList.innerHTML = `<li class="browser-loading">Couldn't load this: ${escapeHtml(e.message)}</li>`;
+    if (e.code === "playlist_restricted") {
+      // We DO have the right permissions — Spotify itself is blocking this
+      // specific playlist (common for algorithmic ones like Discover Weekly).
+      this.browserList.innerHTML = `
+        <li class="browser-loading">
+          ${escapeHtml(e.message)}
+          ${scopeDebugLine}
+        </li>`;
+      return;
+    }
+    this.browserList.innerHTML = `<li class="browser-loading">Couldn't load this: ${escapeHtml(e.message)}${scopeDebugLine}</li>`;
   },
 
   renderPlaylistList(playlists) {
