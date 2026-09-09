@@ -440,9 +440,9 @@ textarea:focus {
   white-space: nowrap;
 }
 
-/* Mini "now playing + lyrics" strip, kept visible while browsing so a
- * song played from here doesn't lose lyrics feedback while you keep
- * looking at the playlist. */
+/* Current-lyric strip — the real track display/timeline/controls stay
+ * visible above the browser at all times, so this only needs to cover
+ * what's actually hidden while browsing: the lyrics box itself. */
 .browser-now-playing {
   background: rgba(29, 185, 84, 0.08);
   border: 1px solid var(--panel-border);
@@ -451,17 +451,9 @@ textarea:focus {
   margin-bottom: 0.6rem;
   flex-shrink: 0;
 }
-.bnp-title {
-  font-size: 0.78rem;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .bnp-lyric {
   font-size: 0.78rem;
   color: var(--accent-soft);
-  margin-top: 0.15rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

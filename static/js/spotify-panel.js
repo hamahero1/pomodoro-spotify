@@ -19,8 +19,6 @@ const SpotifyPanel = {
   init() {
     this.connectView = document.getElementById("spotify-connect");
     this.nowPlayingView = document.getElementById("spotify-now-playing");
-    this.trackRow = document.querySelector("#spotify-now-playing .np-track");
-    this.controlsRow = document.querySelector("#spotify-now-playing .np-controls");
     this.art = document.getElementById("np-art");
     this.title = document.getElementById("np-title");
     this.artist = document.getElementById("np-artist");
@@ -36,7 +34,6 @@ const SpotifyPanel = {
     this.browserBackBtn = document.getElementById("browser-back");
     this.browserCloseBtn = document.getElementById("browser-close");
     this.browserNowPlaying = document.getElementById("browser-now-playing");
-    this.bnpTitle = document.getElementById("bnp-title");
     this.bnpLyric = document.getElementById("bnp-lyric");
 
     this.timeCurrentEl = document.getElementById("np-time-current");
@@ -275,16 +272,14 @@ const SpotifyPanel = {
   },
 
   updateBrowserNowPlaying() {
-    // Keeps a small "now playing + current lyric" strip visible at the top
-    // of the playlist browser, so playing a song from here doesn't require
-    // closing the browser to get any lyrics feedback.
+    // The real track display (art/title/artist/timeline/controls) stays
+    // visible above the browser at all times now — this strip only needs
+    // to cover what's actually hidden while browsing: the lyrics box.
     if (this.browser.classList.contains("hidden")) return;
     if (!this.currentTrackId) {
       this.browserNowPlaying.classList.add("hidden");
       return;
     }
-    this.browserNowPlaying.classList.remove("hidden");
-    this.bnpTitle.textContent = `${this.title.textContent} — ${this.artist.textContent}`;
 
     let lyricLine = "";
     if (this.syncedLines && this.activeLineIndex >= 0) {
@@ -292,6 +287,11 @@ const SpotifyPanel = {
     } else if (this.lyricsBox.classList.contains("lyrics-synced") === false && !this.lyricsBox.querySelector(".lyrics-empty")) {
       lyricLine = this.lyricsBox.textContent.trim().split("\n")[0] || "";
     }
+    if (!lyricLine) {
+      this.browserNowPlaying.classList.add("hidden");
+      return;
+    }
+    this.browserNowPlaying.classList.remove("hidden");
     this.bnpLyric.textContent = lyricLine;
   },
 
@@ -373,8 +373,10 @@ const SpotifyPanel = {
   // ---- Playlist browser ---------------------------------------------
 
   openBrowser() {
-    this.trackRow.classList.add("hidden");
-    this.controlsRow.classList.add("hidden");
+    // Keep the actual track display (art/title/artist), timeline, and
+    // playback controls visible and live — only the lyrics box gets
+    // replaced by the playlist list, so you can still see and control
+    // what's playing while browsing, not just a disconnected mini strip.
     this.lyricsBox.classList.add("hidden");
     this.browser.classList.remove("hidden");
     this.showPlaylists();
@@ -383,8 +385,6 @@ const SpotifyPanel = {
 
   closeBrowser() {
     this.browser.classList.add("hidden");
-    this.trackRow.classList.remove("hidden");
-    this.controlsRow.classList.remove("hidden");
     this.lyricsBox.classList.remove("hidden");
   },
 
