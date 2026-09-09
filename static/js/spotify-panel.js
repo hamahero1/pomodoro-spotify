@@ -299,7 +299,7 @@ const SpotifyPanel = {
     }
   },
 
-  renderBrowserError(e) {
+  renderBrowserError(e, playlistId) {
     const scopes = (e.data && e.data.granted_scopes) || "";
     const scopeDebugLine = `<div style="margin-top:0.5rem;font-size:0.7rem;color:var(--text-faint);">Granted permissions: ${escapeHtml(scopes) || "(none)"}</div>`;
 
@@ -318,12 +318,24 @@ const SpotifyPanel = {
       return;
     }
     if (e.code === "playlist_restricted") {
-      // We DO have the right permissions — Spotify itself is blocking this
-      // specific playlist (common for algorithmic ones like Discover Weekly).
+      // We DO have the right permissions — Spotify itself is blocking our
+      // API from listing this playlist's tracks (common for algorithmic
+      // ones). Spotify's own embedded player isn't subject to that
+      // restriction — it's Spotify's own widget, not our API call — so it
+      // can still show and play the songs even when /tracks 403s.
+      const embed = playlistId
+        ? `<iframe
+             src="https://open.spotify.com/embed/playlist/${encodeURIComponent(playlistId)}?utm_source=generator&theme=0"
+             width="100%" height="352" frameborder="0"
+             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+             loading="lazy"
+             style="border-radius:12px;margin-top:0.8rem;"></iframe>`
+        : "";
       this.browserList.innerHTML = `
         <li class="browser-loading">
           ${escapeHtml(e.message)}
           ${scopeDebugLine}
+          ${embed}
         </li>`;
       return;
     }
@@ -358,7 +370,7 @@ const SpotifyPanel = {
       const data = await apiFetch(`/api/spotify/playlists/${encodeURIComponent(playlistId)}/tracks`);
       this.renderTrackList(data.tracks);
     } catch (e) {
-      this.renderBrowserError(e);
+      this.renderBrowserError(e, playlistId);
     }
   },
 
