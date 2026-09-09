@@ -8,10 +8,13 @@ const SpotifyPanel = {
 
   isPlaying: false,
   currentTrackId: null,
+  currentDurationMs: 0,
   syncedLines: null, // [{timeMs, text}] or null if this track has no synced lyrics
   activeLineIndex: -1,
   progressAtSync: 0,
   lastSyncAt: 0,
+  draggingTimeline: false,
+  dragPositionMs: 0,
 
   init() {
     this.connectView = document.getElementById("spotify-connect");
@@ -33,6 +36,12 @@ const SpotifyPanel = {
     this.browserBackBtn = document.getElementById("browser-back");
     this.browserCloseBtn = document.getElementById("browser-close");
 
+    this.timeCurrentEl = document.getElementById("np-time-current");
+    this.timeTotalEl = document.getElementById("np-time-total");
+    this.progressTrack = document.getElementById("np-progress-track");
+    this.progressFill = document.getElementById("np-progress-fill");
+    this.progressHandle = document.getElementById("np-progress-handle");
+
     document.getElementById("spotify-connect-btn").addEventListener("click", () => {
       window.location.href = "/spotify/login";
     });
@@ -45,8 +54,45 @@ const SpotifyPanel = {
     this.browserCloseBtn.addEventListener("click", () => this.closeBrowser());
     this.browserBackBtn.addEventListener("click", () => this.showPlaylists());
 
+    this.initTimeline();
+
     this.checkStatus();
-    this.tickerId = setInterval(() => this.tickLyrics(), 400);
+    this.tickerId = setInterval(() => this.tick(), 400);
+  },
+
+  initTimeline() {
+    const positionFromEvent = (evt) => {
+      const rect = this.progressTrack.getBoundingClientRect();
+      const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+      const fraction = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      return Math.round(fraction * this.currentDurationMs);
+    };
+
+    const startDrag = (evt) => {
+      if (!this.currentDurationMs) return; // nothing playing / unseekable
+      this.draggingTimeline = true;
+      this.progressTrack.classList.add("dragging");
+      this.dragPositionMs = positionFromEvent(evt);
+      this.renderTimelinePosition(this.dragPositionMs);
+    };
+    const moveDrag = (evt) => {
+      if (!this.draggingTimeline) return;
+      this.dragPositionMs = positionFromEvent(evt);
+      this.renderTimelinePosition(this.dragPositionMs);
+    };
+    const endDrag = () => {
+      if (!this.draggingTimeline) return;
+      this.draggingTimeline = false;
+      this.progressTrack.classList.remove("dragging");
+      this.seekTo(this.dragPositionMs);
+    };
+
+    this.progressTrack.addEventListener("mousedown", startDrag);
+    window.addEventListener("mousemove", moveDrag);
+    window.addEventListener("mouseup", endDrag);
+    this.progressTrack.addEventListener("touchstart", startDrag, { passive: true });
+    window.addEventListener("touchmove", moveDrag, { passive: true });
+    window.addEventListener("touchend", endDrag);
   },
 
   async checkStatus() {
@@ -95,6 +141,7 @@ const SpotifyPanel = {
     const track = data.track;
     if (!track) {
       this.currentTrackId = null;
+      this.currentDurationMs = 0;
       this.syncedLines = null;
       this.title.textContent = "Nothing playing";
       this.artist.textContent = "Press play on Spotify to get started";
@@ -103,6 +150,9 @@ const SpotifyPanel = {
       this.lyricsBox.innerHTML = this.emptyLyricsHTML("Nothing playing right now.");
       this.isPlaying = false;
       this.playPauseBtn.textContent = "▶";
+      this.progressTrack.classList.remove("seekable");
+      this.renderTimelinePosition(0);
+      this.timeTotalEl.textContent = "0:00";
       return;
     }
 
@@ -117,11 +167,15 @@ const SpotifyPanel = {
       this.art.innerHTML = this.musicIconSVG();
     }
 
-    // Keep the lyrics view in sync with real playback position, even
-    // though we only poll every few seconds (tickLyrics interpolates
-    // between polls using elapsed wall-clock time).
+    // Keep the timeline/lyrics in sync with real playback position, even
+    // though we only poll every few seconds (tick() interpolates between
+    // polls using elapsed wall-clock time).
     this.progressAtSync = track.progress_ms || 0;
     this.lastSyncAt = Date.now();
+    this.currentDurationMs = track.duration_ms || 0;
+    this.progressTrack.classList.toggle("seekable", this.currentDurationMs > 0);
+    this.timeTotalEl.textContent = formatClock(this.currentDurationMs / 1000);
+    if (!this.draggingTimeline) this.renderTimelinePosition(this.progressAtSync);
 
     const trackChanged = track.track_id !== this.currentTrackId;
     this.currentTrackId = track.track_id;
@@ -190,8 +244,9 @@ const SpotifyPanel = {
   },
 
   async seekTo(positionMs) {
-    // Click a lyric line to jump playback there — we only have line-level
-    // timing (not per-word), so this seeks to that line's start.
+    // Used by both the timeline scrubber (drag/click) and clicking a lyric
+    // line (line-level timing only, so that jumps to the line's start).
+    this.renderTimelinePosition(positionMs); // instant feedback, don't wait on the network
     try {
       await apiFetch("/api/spotify/player/seek", {
         method: "PUT",
@@ -208,6 +263,26 @@ const SpotifyPanel = {
     } catch (e) {
       showToast("Couldn't seek — is Spotify open on a device? " + e.message, true);
     }
+  },
+
+  tick() {
+    this.tickTimeline();
+    this.tickLyrics();
+  },
+
+  tickTimeline() {
+    if (this.draggingTimeline) return; // don't fight the user's drag
+    if (!this.currentDurationMs) return;
+    const estimatedMs = this.isPlaying ? this.progressAtSync + (Date.now() - this.lastSyncAt) : this.progressAtSync;
+    this.renderTimelinePosition(estimatedMs);
+  },
+
+  renderTimelinePosition(positionMs) {
+    const clamped = Math.max(0, Math.min(this.currentDurationMs, positionMs));
+    const fraction = this.currentDurationMs ? clamped / this.currentDurationMs : 0;
+    this.progressFill.style.width = `${fraction * 100}%`;
+    this.progressHandle.style.left = `${fraction * 100}%`;
+    this.timeCurrentEl.textContent = formatClock(clamped / 1000);
   },
 
   tickLyrics() {

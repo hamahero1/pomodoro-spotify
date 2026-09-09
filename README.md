@@ -83,7 +83,13 @@ dark, glassy, minimal, satisfying to look at — not a bare HTML form.
 - [x] Auto-refreshes as tracks change
 - [x] **Playlist browser:** browse your own Spotify playlists, pick one to
       see its songs, click a song to play it, Back button returns to the
-      playlist list — all within the same panel (no page navigation)
+      playlist list — all within the same panel (no page navigation).
+      Falls back to Spotify's own embedded player widget if Spotify's API
+      blocks track listing for a specific playlist (common for algorithmic
+      ones like Discover Weekly, regardless of permissions granted)
+- [x] **Playback timeline:** a progress bar under the track info showing
+      elapsed/total time — click or drag anywhere on it to seek forward or
+      backward in the song. Clicking a lyric line seeks there too
 
 ### Task manager (bottom-right)
 

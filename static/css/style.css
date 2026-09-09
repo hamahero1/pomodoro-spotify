@@ -279,6 +279,69 @@ textarea:focus {
   text-overflow: ellipsis;
 }
 
+/* Playback timeline — click or drag to seek forward/backward */
+.np-timeline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.np-time {
+  font-size: 0.7rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  width: 32px;
+  flex-shrink: 0;
+}
+.np-time:last-child {
+  text-align: right;
+}
+.np-progress-track {
+  position: relative;
+  flex: 1;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.np-progress-track::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.np-progress-fill {
+  position: absolute;
+  left: 0;
+  height: 4px;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--accent);
+  pointer-events: none;
+}
+.np-progress-handle {
+  position: absolute;
+  left: 0%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
+  transform: translateX(-50%);
+  transition: transform 120ms ease;
+  pointer-events: none;
+}
+.np-progress-track:hover .np-progress-handle,
+.np-progress-track.dragging .np-progress-handle {
+  transform: translateX(-50%) scale(1.25);
+}
+.np-progress-track:not(.seekable) {
+  cursor: default;
+  opacity: 0.5;
+}
+
 .np-controls {
   display: flex;
   align-items: center;
