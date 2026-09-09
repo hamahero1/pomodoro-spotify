@@ -1,0 +1,37 @@
+# Environment / secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+venv/
+.venv/
+env/
+build/
+dist/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Notes (user content, not source)
+notes/files/*.md
+!notes/files/.gitkeep
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+excalidraw.log
+p.py
+
+# Test / coverage
+.pytest_cache/
+htmlcov/
+.coverage

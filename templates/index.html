@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🍅 Pomodoro Spotify</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <header class="topbar">
+    <svg class="logo-mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34a.749.749 0 0 1-1.031.24c-2.822-1.723-6.376-2.111-10.56-1.156a.751.751 0 0 1-.336-1.463c4.575-1.045 8.5-.595 11.687 1.346a.75.75 0 0 1 .24 1.033zm1.44-3.322a.937.937 0 0 1-1.289.307c-3.23-1.987-8.156-2.563-11.98-1.402a.937.937 0 0 1-.545-1.793c4.367-1.324 9.796-.683 13.508 1.598a.938.938 0 0 1 .306 1.29zm.13-3.462C15.24 8.507 8.82 8.297 5.157 9.412a1.125 1.125 0 1 1-.653-2.153c4.207-1.276 11.192-1.03 15.617 1.593a1.125 1.125 0 1 1-1.153 1.938z"/>
+    </svg>
+    <h1>Pomodoro Spotify</h1>
+    <span class="tagline">focus, listen, get things done</span>
+  </header>
+
+  <main class="app-grid">
+
+    <!-- Top-left: Spotify + lyrics -->
+    <section class="panel panel-spotify">
+      <h2>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34a.749.749 0 0 1-1.031.24c-2.822-1.723-6.376-2.111-10.56-1.156a.751.751 0 0 1-.336-1.463c4.575-1.045 8.5-.595 11.687 1.346a.75.75 0 0 1 .24 1.033zm1.44-3.322a.937.937 0 0 1-1.289.307c-3.23-1.987-8.156-2.563-11.98-1.402a.937.937 0 0 1-.545-1.793c4.367-1.324 9.796-.683 13.508 1.598a.938.938 0 0 1 .306 1.29zm.13-3.462C15.24 8.507 8.82 8.297 5.157 9.412a1.125 1.125 0 1 1-.653-2.153c4.207-1.276 11.192-1.03 15.617 1.593a1.125 1.125 0 1 1-1.153 1.938z"/></svg>
+        Spotify &amp; Lyrics
+      </h2>
+
+      <div id="spotify-connect" class="spotify-connect">
+        <img src="{{ url_for('static', filename='img/spotify-logo.svg') }}" alt="Spotify" width="48" height="48" style="color:#1db954;">
+        <p>Connect your real Spotify account to see what's playing and read along with the lyrics while you work.</p>
+        <button id="spotify-connect-btn" class="btn btn-primary" type="button">Connect Spotify</button>
+      </div>
+
+      <div id="spotify-now-playing" class="now-playing hidden">
+        <div class="np-track">
+          <div class="np-art" id="np-art"></div>
+          <div class="np-meta">
+            <div class="np-title" id="np-title">Nothing playing</div>
+            <div class="np-artist" id="np-artist"></div>
+          </div>
+        </div>
+        <div class="np-controls">
+          <button id="np-prev" class="btn btn-icon" type="button" title="Previous">⏮</button>
+          <button id="np-play-pause" class="btn btn-icon" type="button" title="Play/Pause">▶</button>
+          <button id="np-next" class="btn btn-icon" type="button" title="Next">⏭</button>
+          <button id="np-play-in-browser" class="btn" type="button" title="Stream through this browser tab (Premium)" disabled>🎧 Play here</button>
+        </div>
+        <div class="lyrics-box" id="lyrics-box"></div>
+      </div>
+    </section>
+
+    <!-- Top-right: Pomodoro timer -->
+    <section class="panel timer-panel">
+      <h2 style="align-self:flex-start;">⏱ Pomodoro Timer</h2>
+
+      <div class="preset-row">
+        <button class="btn" type="button" data-minutes="5">5 min</button>
+        <button class="btn active" type="button" data-minutes="25">25 min</button>
+        <button class="btn" type="button" data-minutes="50">50 min</button>
+      </div>
+      <div class="custom-duration">
+        <input type="number" id="timer-custom-minutes" min="1" max="300" placeholder="custom">
+        <button id="timer-custom-apply" class="btn" type="button">Set</button>
+      </div>
+
+      <div class="timer-ring-wrap">
+        <svg viewBox="0 0 200 200">
+          <circle class="timer-ring-bg" cx="100" cy="100" r="86"></circle>
+          <circle class="timer-ring-progress" id="timer-ring-progress" cx="100" cy="100" r="86"></circle>
+        </svg>
+        <div class="timer-display">
+          <div class="timer-time" id="timer-time">25:00</div>
+          <div class="timer-phase" id="timer-phase">Focus</div>
+        </div>
+      </div>
+
+      <div class="timer-controls">
+        <button id="timer-start" class="btn btn-primary" type="button">Start</button>
+        <button id="timer-pause" class="btn" type="button" disabled>Pause</button>
+        <button id="timer-reset" class="btn" type="button">Reset</button>
+      </div>
+      <div class="timer-cycles" id="timer-cycles">0 sessions completed</div>
+      <div class="timer-linked-task" id="timer-linked-task"></div>
+    </section>
+
+    <!-- Bottom-left: Dashboard -->
+    <section class="panel">
+      <h2>📊 Dashboard</h2>
+      <div class="dashboard-stats">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-completed">0</div>
+          <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-today">0</div>
+          <div class="stat-label">Done Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-total-time">0s</div>
+          <div class="stat-label">Total Time</div>
+        </div>
+      </div>
+
+      <div class="calendar">
+        <div class="calendar-header">
+          <button id="calendar-prev" class="btn btn-icon" type="button">‹</button>
+          <span class="month-label" id="calendar-month-label"></span>
+          <button id="calendar-next" class="btn btn-icon" type="button">›</button>
+        </div>
+        <div class="calendar-grid" id="calendar-grid"></div>
+        <div class="day-detail" id="day-detail"></div>
+      </div>
+    </section>
+
+    <!-- Bottom-right: Task manager -->
+    <section class="panel">
+      <h2>✅ Task Manager</h2>
+      <form id="task-add-form" class="task-add-form">
+        <input type="text" id="task-title-input" placeholder="New task…" required>
+        <input type="number" id="task-minutes-input" placeholder="min" min="0">
+        <input type="date" id="task-date-input">
+        <button type="submit" class="btn btn-primary">Add</button>
+      </form>
+      <ul class="task-list" id="task-list"></ul>
+    </section>
+
+  </main>
+
+  <button id="notes-fab" class="btn btn-primary notes-fab" type="button">📝 Take Notes</button>
+
+  <div id="notes-overlay" class="overlay hidden">
+    <div class="notes-window">
+      <div class="notes-sidebar">
+        <div class="notes-sidebar-header">
+          <span>Saved notes</span>
+          <button id="notes-new" class="btn btn-icon" type="button" title="New note">＋</button>
+        </div>
+        <ul class="notes-file-list" id="notes-file-list"></ul>
+      </div>
+      <div class="notes-editor">
+        <div class="notes-editor-toolbar">
+          <input type="text" id="notes-title-input" placeholder="Note title">
+          <span class="save-status" id="notes-save-status"></span>
+          <button id="notes-save" class="btn btn-primary" type="button">Save</button>
+          <button id="notes-close" class="btn btn-icon" type="button" title="Close">✕</button>
+        </div>
+        <textarea id="notes-content" placeholder="Write anything…"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/spotify-panel.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/spotify-player.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/timer.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/notes.js') }}"></script>
+  <script>
+    // Surface an OAuth error passed back via ?spotify_error=... then clean the URL.
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const err = params.get("spotify_error");
+      if (err) {
+        document.addEventListener("DOMContentLoaded", () => showToast("Spotify connection failed: " + err, true));
+        params.delete("spotify_error");
+        const clean = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
+        window.history.replaceState({}, "", clean);
+      }
+    })();
+  </script>
+</body>
+</html>
