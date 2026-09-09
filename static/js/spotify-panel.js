@@ -518,9 +518,29 @@ const SpotifyPanel = {
         this.browserList.querySelectorAll(".browser-item.playing").forEach((el) => el.classList.remove("playing"));
         listItemEl.classList.add("playing");
       }
-      setTimeout(() => this.pollNowPlaying(), 300);
+      const expectedTrackId = (uri.match(/^spotify:track:(.+)$/) || [])[1];
+      setTimeout(() => this.confirmTrackChange(expectedTrackId), 350);
     } catch (e) {
       showToast("Couldn't play that song — is Spotify open on a device? " + e.message, true);
+    }
+  },
+
+  async confirmTrackChange(expectedTrackId, attempt = 0) {
+    // Spotify's own "currently playing" endpoint can lag a bit behind the
+    // play command — a single fixed-delay check sometimes still caught the
+    // OLD track and then just sat there (nothing re-triggers a re-check
+    // until the next 6s poll). Retry briefly instead, so the track display
+    // reliably catches up to whatever was actually clicked.
+    let data;
+    try {
+      data = await apiFetch("/api/lyrics/current");
+    } catch (e) {
+      return; // the regular 6s poll loop will pick it up eventually
+    }
+    this.renderTrack(data);
+    const caughtUp = !expectedTrackId || (data.track && data.track.track_id === expectedTrackId);
+    if (!caughtUp && attempt < 8) {
+      setTimeout(() => this.confirmTrackChange(expectedTrackId, attempt + 1), 400);
     }
   },
 };
