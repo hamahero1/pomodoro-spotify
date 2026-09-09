@@ -424,13 +424,20 @@ const SpotifyPanel = {
       // ones). Spotify's own embedded player isn't subject to that
       // restriction — it's Spotify's own widget, not our API call — so it
       // can still show and play the songs even when /tracks 403s.
+      // IMPORTANT: this widget is Spotify's own sandboxed iframe — it has
+      // its OWN play/pause/progress that our JS has no access to (cross-
+      // origin) and no connection to the real playback tracked above. Its
+      // controls do NOT control your actual device, and its "now playing"
+      // does NOT reflect what's actually audible. Label it clearly so it
+      // doesn't look like a second, conflicting now-playing display.
       const embed = playlistId
-        ? `<iframe
+        ? `<div class="embed-warning">⚠️ This is Spotify's own separate preview widget — its play button and progress bar are independent and don't control your actual playback. To really play a song, use the ▶ inside it once (starts audio in this preview player), or open the song in your Spotify app.</div>
+           <iframe
              src="https://open.spotify.com/embed/playlist/${encodeURIComponent(playlistId)}?utm_source=generator&theme=0"
              width="100%" height="352" frameborder="0"
              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
              loading="lazy"
-             style="border-radius:12px;margin-top:0.8rem;"></iframe>`
+             style="border-radius:12px;margin-top:0.5rem;"></iframe>`
         : "";
       this.browserList.innerHTML = `
         <li class="browser-loading">

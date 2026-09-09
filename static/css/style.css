@@ -520,6 +520,16 @@ textarea:focus {
   font-size: 0.82rem;
   padding: 0.5rem;
 }
+.embed-warning {
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  background: rgba(255, 193, 7, 0.08);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: var(--radius-sm);
+  color: #e8c467;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
 
 /* ---------- Timer panel ---------- */
 .timer-panel {
