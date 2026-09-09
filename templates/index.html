@@ -43,9 +43,19 @@
           <button id="np-prev" class="btn btn-icon" type="button" title="Previous">⏮</button>
           <button id="np-play-pause" class="btn btn-icon" type="button" title="Play/Pause">▶</button>
           <button id="np-next" class="btn btn-icon" type="button" title="Next">⏭</button>
+          <button id="np-playlists-toggle" class="btn btn-icon" type="button" title="Your Playlists">🎵</button>
           <button id="np-play-in-browser" class="btn" type="button" title="Stream through this browser tab (Premium)" disabled>🎧 Play here</button>
         </div>
         <div class="lyrics-box" id="lyrics-box"></div>
+
+        <div id="spotify-browser" class="spotify-browser hidden">
+          <div class="browser-header">
+            <button id="browser-back" class="btn btn-icon" type="button" style="display:none;">‹</button>
+            <span id="browser-title">Your Playlists</span>
+            <button id="browser-close" class="btn btn-icon" type="button" title="Close">✕</button>
+          </div>
+          <ul id="browser-list" class="browser-list"></ul>
+        </div>
       </div>
     </section>
 

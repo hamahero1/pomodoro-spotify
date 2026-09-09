@@ -70,16 +70,20 @@ dark, glassy, minimal, satisfying to look at — not a bare HTML form.
 
 ### Spotify integration (top-left)
 
-- [ ] "Connect Spotify" button → real OAuth login with your Spotify account
-- [ ] Spotify logo/icon displayed
-- [ ] Shows currently playing track: album art, title, artist
-- [ ] **In-browser playback control** via Spotify Web Playback SDK (play /
+- [x] "Connect Spotify" button → real OAuth login with your Spotify account
+- [x] Spotify logo/icon displayed
+- [x] Shows currently playing track: album art, title, artist
+- [x] **In-browser playback control** via Spotify Web Playback SDK (play /
       pause / skip directly on the site) — uses your **Premium** account
-- [ ] Lyrics display for the current track, via **lrclib.net** (free, no API
-      key required)
-- [ ] **Fallback:** if no lyrics are found for the track, show the track's
-      album art / a generic music note icon instead of an empty panel
-- [ ] Auto-refreshes as tracks change
+- [x] **Karaoke-style synced lyrics** via lrclib.net: the current line is
+      highlighted and auto-scrolled in sync with real playback position
+      (falls back to plain, unsynced lyrics text if a track only has those)
+- [x] **Fallback:** if a track has no lyrics at all, show its album art
+      large instead of an empty panel
+- [x] Auto-refreshes as tracks change
+- [x] **Playlist browser:** browse your own Spotify playlists, pick one to
+      see its songs, click a song to play it, Back button returns to the
+      playlist list — all within the same panel (no page navigation)
 
 ### Task manager (bottom-right)
 

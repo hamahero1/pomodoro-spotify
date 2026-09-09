@@ -104,6 +104,75 @@ def transfer_playback(access_token: str, device_id: str, play: bool = True) -> N
         raise SpotifyAPIError(f"Transfer playback failed: {resp.status_code} {resp.text}")
 
 
+def get_user_playlists(access_token: str, limit: int = 50) -> list[dict]:
+    resp = requests.get(
+        f"{API_BASE}/me/playlists",
+        headers=_auth_headers(access_token),
+        params={"limit": limit},
+        timeout=REQUEST_TIMEOUT,
+    )
+    if resp.status_code == 401:
+        raise SpotifyAPIError("Access token expired or invalid")
+    if resp.status_code != 200:
+        raise SpotifyAPIError(f"Playlists lookup failed: {resp.status_code} {resp.text}")
+
+    items = resp.json().get("items", [])
+    return [
+        {
+            "id": p["id"],
+            "name": p["name"],
+            "image_url": (p.get("images") or [{}])[0].get("url"),
+            "track_count": p.get("tracks", {}).get("total", 0),
+            "owner": (p.get("owner") or {}).get("display_name"),
+        }
+        for p in items
+        if p  # Spotify can return null entries for playlists you no longer have access to
+    ]
+
+
+def get_playlist_tracks(access_token: str, playlist_id: str, limit: int = 100) -> list[dict]:
+    resp = requests.get(
+        f"{API_BASE}/playlists/{playlist_id}/tracks",
+        headers=_auth_headers(access_token),
+        params={"limit": limit},
+        timeout=REQUEST_TIMEOUT,
+    )
+    if resp.status_code == 401:
+        raise SpotifyAPIError("Access token expired or invalid")
+    if resp.status_code != 200:
+        raise SpotifyAPIError(f"Playlist tracks lookup failed: {resp.status_code} {resp.text}")
+
+    items = resp.json().get("items", [])
+    tracks = []
+    for entry in items:
+        track = entry.get("track")
+        if not track or not track.get("uri"):
+            continue  # local files / removed tracks have no playable uri
+        tracks.append(
+            {
+                "uri": track["uri"],
+                "title": track.get("name"),
+                "artist": ", ".join(a.get("name", "") for a in track.get("artists", [])),
+                "album_art_url": (track.get("album", {}).get("images") or [{}])[0].get("url"),
+                "duration_ms": track.get("duration_ms"),
+            }
+        )
+    return tracks
+
+
+def play_track(access_token: str, uri: str, device_id: str | None = None) -> None:
+    params = {"device_id": device_id} if device_id else {}
+    resp = requests.put(
+        f"{API_BASE}/me/player/play",
+        headers=_auth_headers(access_token),
+        params=params,
+        json={"uris": [uri]},
+        timeout=REQUEST_TIMEOUT,
+    )
+    if resp.status_code not in (200, 202, 204):
+        raise SpotifyAPIError(f"Play track failed: {resp.status_code} {resp.text}")
+
+
 def player_command(access_token: str, action: str, device_id: str | None = None) -> None:
     """action: 'play' | 'pause' | 'next' | 'previous'."""
     method = {"play": "PUT", "pause": "PUT", "next": "POST", "previous": "POST"}[action]

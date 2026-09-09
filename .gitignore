@@ -30,6 +30,9 @@ notes/files/*.md
 Thumbs.db
 excalidraw.log
 p.py
+server_out.log
+server_err.log
+server.pid
 
 # Test / coverage
 .pytest_cache/

@@ -35,6 +35,7 @@ def login():
 def callback():
     error = request.args.get("error")
     if error:
+        current_app.logger.warning("Spotify callback returned an error param: %s", error)
         return redirect(url_for("index", spotify_error=error))
 
     state = request.args.get("state")
@@ -42,6 +43,11 @@ def callback():
     # Verifying state prevents CSRF on the OAuth callback (an attacker tricking
     # your browser into completing a login flow they initiated).
     if not state or not expected_state or state != expected_state:
+        current_app.logger.warning(
+            "Spotify callback state mismatch (got=%r, expected=%r) — likely a stale "
+            "session cookie or a second login attempt overwriting the first.",
+            state, expected_state,
+        )
         return redirect(url_for("index", spotify_error="invalid_state"))
 
     code = request.args.get("code")
@@ -55,10 +61,15 @@ def callback():
             client_id=_cfg()["SPOTIFY_CLIENT_ID"],
             client_secret=_cfg()["SPOTIFY_CLIENT_SECRET"],
         )
-    except client.SpotifyAPIError:
+    except client.SpotifyAPIError as e:
+        # Logged in full server-side (never sent to the browser) — this is
+        # almost always a redirect_uri mismatch between what's registered on
+        # the Spotify dashboard and SPOTIFY_REDIRECT_URI in .env.
+        current_app.logger.error("Spotify token exchange failed: %s", e)
         return redirect(url_for("index", spotify_error="token_exchange_failed"))
 
     _store_tokens(token_data)
+    current_app.logger.info("Spotify connected successfully.")
     return redirect(url_for("index"))
 
 
@@ -168,6 +179,46 @@ def player_transfer():
         return jsonify({"error": "missing_device_id"}), 400
     try:
         client.transfer_playback(access_token, device_id)
+    except client.SpotifyAPIError:
+        return jsonify({"error": "spotify_error"}), 502
+    return jsonify({"ok": True})
+
+
+@spotify_bp.route("/api/spotify/playlists")
+def playlists():
+    access_token = get_valid_access_token()
+    if not access_token:
+        return jsonify({"error": "not_connected"}), 401
+    try:
+        items = client.get_user_playlists(access_token)
+    except client.SpotifyAPIError:
+        return jsonify({"error": "spotify_error"}), 502
+    return jsonify({"playlists": items})
+
+
+@spotify_bp.route("/api/spotify/playlists/<playlist_id>/tracks")
+def playlist_tracks(playlist_id: str):
+    access_token = get_valid_access_token()
+    if not access_token:
+        return jsonify({"error": "not_connected"}), 401
+    try:
+        tracks = client.get_playlist_tracks(access_token, playlist_id)
+    except client.SpotifyAPIError:
+        return jsonify({"error": "spotify_error"}), 502
+    return jsonify({"tracks": tracks})
+
+
+@spotify_bp.route("/api/spotify/player/play-track", methods=["PUT"])
+def player_play_track():
+    access_token = get_valid_access_token()
+    if not access_token:
+        return jsonify({"error": "not_connected"}), 401
+    data = request.get_json(silent=True) or {}
+    uri = data.get("uri")
+    if not uri:
+        return jsonify({"error": "missing_uri"}), 400
+    try:
+        client.play_track(access_token, uri, data.get("device_id"))
     except client.SpotifyAPIError:
         return jsonify({"error": "spotify_error"}), 502
     return jsonify({"ok": True})

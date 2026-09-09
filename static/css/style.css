@@ -25,6 +25,12 @@
   box-sizing: border-box;
 }
 
+/* Generic show/hide utility — used to toggle between connect/now-playing,
+ * the notes-fab vs overlay content, the playlist browser, etc. */
+.hidden {
+  display: none !important;
+}
+
 html,
 body {
   height: 100%;
@@ -265,7 +271,8 @@ textarea:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .lyrics-box {
@@ -293,6 +300,108 @@ textarea:focus {
   width: 34px;
   height: 34px;
   opacity: 0.6;
+}
+.lyrics-empty-photo .lyrics-fallback-art {
+  width: 140px;
+  height: 140px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Karaoke-style synced lyrics */
+.lyrics-box.lyrics-synced {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  scroll-behavior: smooth;
+}
+.lyrics-box.lyrics-synced .lyric-line {
+  color: var(--text-faint);
+  transition: color var(--transition), transform var(--transition);
+  font-size: 0.86rem;
+}
+.lyrics-box.lyrics-synced .lyric-line.active {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.95rem;
+  transform: translateX(2px);
+}
+
+/* Playlist browser (in-panel, replaces now-playing/lyrics while open) */
+.spotify-browser {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.browser-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.browser-header #browser-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.browser-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.browser-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.browser-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.browser-item img,
+.browser-item-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.05);
+}
+.browser-item-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.bi-title {
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bi-sub {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+.browser-loading {
+  color: var(--text-faint);
+  font-size: 0.82rem;
+  padding: 0.5rem;
 }
 
 /* ---------- Timer panel ---------- */
@@ -623,6 +732,9 @@ textarea:focus {
   transition: opacity var(--transition);
 }
 .overlay.hidden {
+  /* Override the generic .hidden (display:none) — this needs to stay
+     visible-but-transparent so the opacity transition can animate. */
+  display: flex !important;
   opacity: 0;
   pointer-events: none;
 }
@@ -743,6 +855,12 @@ textarea:focus {
 .toast.error {
   border-color: var(--danger);
   color: var(--danger);
+  cursor: pointer;
+}
+.toast.error::after {
+  content: " (click to dismiss)";
+  opacity: 0.6;
+  font-size: 0.75rem;
 }
 
 /* ---------- Responsive ---------- */

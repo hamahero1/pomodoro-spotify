@@ -35,6 +35,11 @@ function showToast(message, isError = false) {
   el.classList.toggle("error", isError);
   el.classList.add("show");
   clearTimeout(showToast._t);
+  // Errors stay up until dismissed (click) — easy to miss a 2.6s toast.
+  if (isError) {
+    el.onclick = () => el.classList.remove("show");
+    return;
+  }
   showToast._t = setTimeout(() => el.classList.remove("show"), 2600);
 }
 
