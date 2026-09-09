@@ -439,6 +439,34 @@ textarea:focus {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Mini "now playing + lyrics" strip, kept visible while browsing so a
+ * song played from here doesn't lose lyrics feedback while you keep
+ * looking at the playlist. */
+.browser-now-playing {
+  background: rgba(29, 185, 84, 0.08);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.7rem;
+  margin-bottom: 0.6rem;
+  flex-shrink: 0;
+}
+.bnp-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bnp-lyric {
+  font-size: 0.78rem;
+  color: var(--accent-soft);
+  margin-top: 0.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .browser-list {
   list-style: none;
   margin: 0;
@@ -460,6 +488,13 @@ textarea:focus {
 }
 .browser-item:hover {
   background: rgba(255, 255, 255, 0.06);
+}
+.browser-item.playing {
+  background: var(--accent-dim);
+  border: 1px solid var(--panel-border-hover);
+}
+.browser-item.playing .bi-title {
+  color: var(--accent);
 }
 .browser-item img,
 .browser-item-icon {

@@ -35,6 +35,9 @@ const SpotifyPanel = {
     this.browserList = document.getElementById("browser-list");
     this.browserBackBtn = document.getElementById("browser-back");
     this.browserCloseBtn = document.getElementById("browser-close");
+    this.browserNowPlaying = document.getElementById("browser-now-playing");
+    this.bnpTitle = document.getElementById("bnp-title");
+    this.bnpLyric = document.getElementById("bnp-lyric");
 
     this.timeCurrentEl = document.getElementById("np-time-current");
     this.timeTotalEl = document.getElementById("np-time-total");
@@ -268,6 +271,28 @@ const SpotifyPanel = {
   tick() {
     this.tickTimeline();
     this.tickLyrics();
+    this.updateBrowserNowPlaying();
+  },
+
+  updateBrowserNowPlaying() {
+    // Keeps a small "now playing + current lyric" strip visible at the top
+    // of the playlist browser, so playing a song from here doesn't require
+    // closing the browser to get any lyrics feedback.
+    if (this.browser.classList.contains("hidden")) return;
+    if (!this.currentTrackId) {
+      this.browserNowPlaying.classList.add("hidden");
+      return;
+    }
+    this.browserNowPlaying.classList.remove("hidden");
+    this.bnpTitle.textContent = `${this.title.textContent} — ${this.artist.textContent}`;
+
+    let lyricLine = "";
+    if (this.syncedLines && this.activeLineIndex >= 0) {
+      lyricLine = this.syncedLines[this.activeLineIndex].text;
+    } else if (this.lyricsBox.classList.contains("lyrics-synced") === false && !this.lyricsBox.querySelector(".lyrics-empty")) {
+      lyricLine = this.lyricsBox.textContent.trim().split("\n")[0] || "";
+    }
+    this.bnpLyric.textContent = lyricLine;
   },
 
   tickTimeline() {
@@ -353,6 +378,7 @@ const SpotifyPanel = {
     this.lyricsBox.classList.add("hidden");
     this.browser.classList.remove("hidden");
     this.showPlaylists();
+    this.updateBrowserNowPlaying();
   },
 
   closeBrowser() {
@@ -464,12 +490,12 @@ const SpotifyPanel = {
           <div class="bi-title">${escapeHtml(t.title)}</div>
           <div class="bi-sub">${escapeHtml(t.artist)}</div>
         </span>`;
-      li.addEventListener("click", () => this.playTrack(t.uri));
+      li.addEventListener("click", () => this.playTrack(t.uri, li));
       this.browserList.appendChild(li);
     });
   },
 
-  async playTrack(uri) {
+  async playTrack(uri, listItemEl) {
     try {
       await apiFetch("/api/spotify/player/play-track", {
         method: "PUT",
@@ -478,8 +504,14 @@ const SpotifyPanel = {
           device_id: typeof SpotifyPlayer !== "undefined" ? SpotifyPlayer.deviceId : null,
         }),
       });
-      this.closeBrowser();
-      setTimeout(() => this.pollNowPlaying(), 500);
+      // Stay in the playlist — the "now playing + lyrics" strip at the top
+      // (updateBrowserNowPlaying) keeps you informed without having to
+      // close the browser just to see what's playing.
+      if (listItemEl) {
+        this.browserList.querySelectorAll(".browser-item.playing").forEach((el) => el.classList.remove("playing"));
+        listItemEl.classList.add("playing");
+      }
+      setTimeout(() => this.pollNowPlaying(), 300);
     } catch (e) {
       showToast("Couldn't play that song — is Spotify open on a device? " + e.message, true);
     }
