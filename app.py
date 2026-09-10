@@ -4,6 +4,7 @@ from __future__ import annotations
 from urllib.parse import urlparse
 
 from flask import Flask, abort, jsonify, render_template, request
+from sqlalchemy import inspect, text
 
 from config import Config
 from extensions import db
@@ -29,6 +30,7 @@ def create_app(config_class: type = Config) -> Flask:
 
     with app.app_context():
         db.create_all()
+        _migrate_schema()
 
     _register_security(app)
     _register_error_handlers(app)
@@ -40,6 +42,30 @@ def create_app(config_class: type = Config) -> Flask:
         )
 
     return app
+
+
+def _migrate_schema() -> None:
+    """Lightweight, dependency-free auto-migration for existing SQLite DBs.
+
+    db.create_all() only creates tables that don't exist yet — it never
+    alters an existing table's columns. Any time a new column is added to
+    a model after some users already have a database file on disk, this is
+    what actually applies it, instead of leaving them with a 500 error
+    (e.g. "no such column: note.folder") until they delete their data.
+    Add one `_add_column_if_missing(...)` line here per new column.
+    """
+    inspector = inspect(db.engine)
+    _add_column_if_missing(inspector, "note", "folder", "VARCHAR(100)")
+
+
+def _add_column_if_missing(inspector, table: str, column: str, sql_type: str) -> None:
+    if table not in inspector.get_table_names():
+        return  # a fresh DB — db.create_all() already created it with every column
+    existing = {c["name"] for c in inspector.get_columns(table)}
+    if column in existing:
+        return
+    db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {sql_type}"))
+    db.session.commit()
 
 
 def _register_security(app: Flask) -> None:
