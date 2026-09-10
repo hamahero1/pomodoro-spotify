@@ -1,0 +1,6 @@
+# Force LF line endings for anything that runs as a script on Linux,
+# regardless of the committer's OS/git config — a CRLF shebang line
+# breaks with "bad interpreter" on the actual deployment target.
+*.sh text eol=lf
+deploy/*.service text eol=lf
+deploy/nginx.conf text eol=lf

@@ -20,6 +20,32 @@ Use that as your hostname everywhere in this guide instead of a real domain.
 
 ---
 
+## Fast path: one script
+
+Once you've got the instance created and connected via SSH (steps 1–2
+below), everything from "get the code" through "working HTTPS" is a single
+command — [`deploy/deploy.sh`](deploy/deploy.sh):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hamahero1/pomodoro-spotify/main/deploy/deploy.sh -o deploy.sh
+chmod +x deploy.sh
+./deploy.sh yourdomain.com        # or: ./deploy.sh --sslip
+```
+
+It clones the repo, sets up the venv, **runs the test suite and aborts if
+anything fails**, writes `.env` (prompting for your Spotify Client
+ID/Secret if `.env` doesn't exist yet — never touches it if it already
+does), installs + starts the systemd service, configures Nginx, gets an
+HTTPS cert via certbot, and does an end-to-end check against the live URL.
+It's safe to re-run any time (e.g. after `git push`ing an update) — every
+step checks its own state first rather than blindly redoing work.
+
+The rest of this document explains what that script does step by step —
+useful if something goes wrong, you want to understand the setup, or
+you'd rather run it manually.
+
+---
+
 ## 1. Create the Lightsail instance
 
 1. In the [Lightsail console](https://lightsail.aws.amazon.com/), **Create
@@ -142,11 +168,22 @@ and land you back on the app.
 
 ## Updating the app later
 
+Easiest: re-run the deploy script with the same domain — it pulls the
+latest code, reinstalls deps, re-runs the tests, and restarts the service,
+all safely (it won't touch your existing `.env` or working HTTPS setup):
+
+```bash
+cd ~/pomodoro-spotify && ./deploy/deploy.sh yourdomain.com
+```
+
+Or do it by hand:
+
 ```bash
 cd ~/pomodoro-spotify
 git pull
 source venv/bin/activate
 pip install -r requirements.txt   # in case dependencies changed
+pytest -q                          # confirm nothing's broken before restarting
 sudo systemctl restart pomodoro-spotify
 ```
 
