@@ -37,7 +37,12 @@ def test_log_timer_session_and_calendar(client):
     assert resp.status_code == 201
 
     resp = client.get("/api/dashboard/summary")
-    assert resp.get_json()["last_14_days"][-1]["total_seconds"] >= 1500
+    # A 1500s (25 min) session that started "now" lands in whichever day
+    # bucket its start time falls on — right around UTC midnight, that can
+    # be yesterday rather than today. Sum across the window instead of
+    # assuming it's always the last (today's) bucket.
+    total = sum(day["total_seconds"] for day in resp.get_json()["last_14_days"])
+    assert total >= 1500
 
 
 def test_log_timer_session_rejects_bad_kind(client):
