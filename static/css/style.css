@@ -116,9 +116,9 @@ input {
   grid-template-rows: 1fr 1fr;
   gap: 0.9rem;
   padding: 0.7rem 1.4rem 1rem;
-  max-width: 1400px;
+  /* No max-width — the grid fills the actual page width on any screen
+     instead of capping out and leaving empty space on the sides. */
   width: 100%;
-  margin: 0 auto;
 }
 
 .panel {
