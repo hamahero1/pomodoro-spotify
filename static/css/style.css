@@ -505,6 +505,10 @@ textarea:focus {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.bnp-lyric.bnp-no-lyrics {
+  color: var(--text-faint);
+  font-style: italic;
+}
 
 .browser-list {
   list-style: none;

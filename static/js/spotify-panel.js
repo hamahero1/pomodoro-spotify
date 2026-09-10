@@ -290,15 +290,18 @@ const SpotifyPanel = {
     let lyricLine = "";
     if (this.syncedLines && this.activeLineIndex >= 0) {
       lyricLine = this.syncedLines[this.activeLineIndex].text;
-    } else if (this.lyricsBox.classList.contains("lyrics-synced") === false && !this.lyricsBox.querySelector(".lyrics-empty")) {
+    } else if (!this.lyricsBox.classList.contains("lyrics-synced") && !this.lyricsBox.querySelector(".lyrics-empty")) {
       lyricLine = this.lyricsBox.textContent.trim().split("\n")[0] || "";
     }
-    if (!lyricLine) {
-      this.browserNowPlaying.classList.add("hidden");
-      return;
-    }
+
+    // Always show SOMETHING once a track is actually loaded — previously
+    // this strip went silently blank/hidden for any track lrclib has no
+    // lyrics for, which looked exactly like "nothing updated after
+    // picking a new song" even though the track (and audio) had in fact
+    // changed. A visible fallback confirms the switch either way.
     this.browserNowPlaying.classList.remove("hidden");
-    this.bnpLyric.textContent = lyricLine;
+    this.bnpLyric.classList.toggle("bnp-no-lyrics", !lyricLine);
+    this.bnpLyric.textContent = lyricLine || `🎵 ${this.title.textContent} — ${this.artist.textContent} (no lyrics found)`;
   },
 
   tickTimeline() {
