@@ -275,9 +275,10 @@ them:
 3. **Theme:** Dark mode only (Spotify-green accent on near-black
    background). *(Default: dark only — say if you want a light toggle
    too.)*
-4. **Deployment:** Local use only for now (`python app.py` on
-   `localhost`). *(Default: local only — say if you want it deployed
-   somewhere like Render/Railway later.)*
+4. **Deployment:** ✅ Deployable to AWS Lightsail — see
+   [DEPLOYMENT.md](DEPLOYMENT.md) for the full guide (Gunicorn + systemd +
+   Nginx + HTTPS via certbot). Still works fine locally too
+   (`python app.py`) for day-to-day dev.
 5. **License:** MIT. *(Default — say if you want a different license or
    none at all.)*
 6. **Timer ↔ Task link:** Should starting a Pomodoro work session require
@@ -308,6 +309,14 @@ Run the test suite with:
 ```bash
 pytest
 ```
+
+### Deploying it for real (AWS Lightsail)
+
+The steps above are for local development. To run this on a server so
+it's reachable from anywhere (not just your own machine), see
+**[DEPLOYMENT.md](DEPLOYMENT.md)** — a full guide covering the Lightsail
+instance, Gunicorn + systemd, Nginx, and free HTTPS via certbot (required —
+Spotify login won't work over plain HTTP on a public server).
 
 ---
 

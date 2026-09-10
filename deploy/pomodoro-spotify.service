@@ -1,0 +1,49 @@
+# systemd unit for running Pomodoro Spotify under Gunicorn.
+#
+# Install:
+#   sudo cp deploy/pomodoro-spotify.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now pomodoro-spotify
+#
+# Logs:
+#   sudo journalctl -u pomodoro-spotify -f
+#
+# Adjust User/WorkingDirectory/paths below if you didn't follow
+# DEPLOYMENT.md exactly (e.g. a different Linux username or app path).
+
+[Unit]
+Description=Pomodoro Spotify (Gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/pomodoro-spotify
+Environment=PATH=/home/ubuntu/pomodoro-spotify/venv/bin
+# .env is loaded by the app itself (python-dotenv) from WorkingDirectory,
+# so no EnvironmentFile= is needed here.
+ExecStart=/home/ubuntu/pomodoro-spotify/venv/bin/gunicorn \
+    --workers 1 \
+    --threads 4 \
+    --bind 127.0.0.1:8000 \
+    --access-logfile - \
+    --error-logfile - \
+    app:app
+# --workers 1 is deliberate: SQLite serializes writes, and multiple
+# worker PROCESSES (unlike threads) each open their own connection —
+# under real concurrent writes that can raise "database is locked".
+# One worker with several threads gives you real concurrency for this
+# single-user app without that risk. (config.py also sets a busy_timeout
+# as a second line of defense.)
+
+Restart=on-failure
+RestartSec=5
+
+# Light sandboxing — harmless for this app, and standard practice for any
+# systemd-managed web service.
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -30,6 +30,14 @@ class Config:
 
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///pomodoro.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # SQLite serializes writes; a request that hits a brief lock waits up to
+    # this many seconds instead of immediately raising "database is locked"
+    # (Python's sqlite3 default is only 5s). Belt-and-suspenders alongside
+    # running a single Gunicorn worker in production — see deploy/. Only
+    # applied for sqlite: this connect arg isn't valid for other DBAPIs, in
+    # case DATABASE_URL is ever pointed at Postgres/MySQL instead.
+    if SQLALCHEMY_DATABASE_URI.startswith("sqlite"):
+        SQLALCHEMY_ENGINE_OPTIONS = {"connect_args": {"timeout": 15}}
 
     # Spotify OAuth
     SPOTIFY_CLIENT_ID = os.environ.get("SPOTIFY_CLIENT_ID", "")
