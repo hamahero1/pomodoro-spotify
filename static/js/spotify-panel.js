@@ -153,6 +153,7 @@ const SpotifyPanel = {
       this.progressTrack.classList.remove("seekable");
       this.renderTimelinePosition(0);
       this.timeTotalEl.textContent = "0:00";
+      this.setDynamicColor(null); // nothing playing -> back to green
       return;
     }
 
@@ -165,6 +166,7 @@ const SpotifyPanel = {
       this.art.innerHTML = `<img src="${track.album_art_url}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
     } else {
       this.art.innerHTML = this.musicIconSVG();
+      this.setDynamicColor(null);
     }
 
     // Keep the timeline/lyrics in sync with real playback position, even
@@ -181,6 +183,10 @@ const SpotifyPanel = {
     this.currentTrackId = track.track_id;
 
     if (!trackChanged) return; // don't rebuild the DOM every poll for the same track
+
+    if (track.album_art_url) {
+      extractDominantColor(track.album_art_url).then((rgb) => this.setDynamicColor(rgb));
+    }
 
     this.activeLineIndex = -1;
 
@@ -368,6 +374,20 @@ const SpotifyPanel = {
 
   musicIconSVG(standalone = false) {
     return `<svg viewBox="0 0 24 24"${standalone ? "" : ' style="width:24px;height:24px;"'}><path fill="currentColor" d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>`;
+  },
+
+  // Sets the page's ambient color from the current track's album art
+  // (background glow + lyrics highlight, via the --dynamic-color CSS
+  // variable). Pass null to go back to the default green — used both when
+  // nothing's playing and as the safe fallback if extraction fails/is
+  // blocked (e.g. no CORS on the image), so a failure here never breaks
+  // anything, it just quietly keeps the current/default color.
+  setDynamicColor(rgbTriplet) {
+    if (rgbTriplet) {
+      document.documentElement.style.setProperty("--dynamic-color", rgbTriplet);
+    } else {
+      document.documentElement.style.removeProperty("--dynamic-color");
+    }
   },
 
   // ---- Playlist browser ---------------------------------------------

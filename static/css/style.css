@@ -1,8 +1,12 @@
 /* ---------- Design tokens ---------- */
 :root {
   --bg: #0b0d0c;
-  --bg-glow-1: #1db95433;
-  --bg-glow-2: #4d2fff22;
+  /* RGB triplet (no rgb() wrapper) so it can be composed into rgba()/
+     color-mix() at different opacities below. Defaults to brand green;
+     spotify-panel.js overwrites this on <html> from the current track's
+     album art, and removes the override (falling back to this default)
+     when nothing is playing — see "no music -> green" behavior. */
+  --dynamic-color: 29, 185, 84;
   --panel-bg: rgba(24, 26, 25, 0.65);
   --panel-border: rgba(255, 255, 255, 0.08);
   --panel-border-hover: rgba(29, 185, 84, 0.35);
@@ -41,10 +45,15 @@ body {
   margin: 0;
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   color: var(--text);
+  /* Ambient background tinted from the current track's album art (green
+     when nothing's playing — see --dynamic-color above) — same idea as
+     Spotify's own now-playing background glow. Transitions smoothly
+     between tracks instead of snapping. */
   background:
-    radial-gradient(circle at 15% 10%, var(--bg-glow-1), transparent 40%),
-    radial-gradient(circle at 85% 90%, var(--bg-glow-2), transparent 45%),
+    radial-gradient(circle at 15% 10%, rgba(var(--dynamic-color), 0.22), transparent 40%),
+    radial-gradient(circle at 85% 90%, rgba(var(--dynamic-color), 0.14), transparent 45%),
     var(--bg);
+  transition: background 900ms ease;
   /* A fixed-height, non-scrolling page: on a normal screen, everything —
      Spotify/lyrics, timer, dashboard, tasks — fits in one view, sized off
      each other proportionally. Any panel whose content genuinely doesn't
@@ -422,13 +431,15 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.05);
 }
 .lyrics-box.lyrics-synced .lyric-line.current-line {
-  color: var(--accent-soft);
+  /* Lighter tint of the album-art color (or green when nothing's playing)
+     instead of a fixed color, so it always matches the active-word below. */
+  color: color-mix(in srgb, rgb(var(--dynamic-color)) 60%, white);
 }
 .lyrics-box.lyrics-synced .lyric-word {
   transition: color 320ms ease, font-weight 320ms ease;
 }
 .lyrics-box.lyrics-synced .lyric-word.active-word {
-  color: var(--accent);
+  color: rgb(var(--dynamic-color));
   font-weight: 700;
 }
 

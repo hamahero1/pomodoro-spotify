@@ -74,3 +74,48 @@ function escapeHtml(str) {
   div.textContent = str ?? "";
   return div.innerHTML;
 }
+
+/**
+ * Approximates an image's dominant color by downscaling it onto a tiny
+ * canvas (the browser's own scaling does the averaging for us) and
+ * averaging the resulting pixels, skipping near-white/near-black ones so
+ * album art with plain-color borders/backgrounds doesn't wash out the
+ * result. Resolves to an "r, g, b" string, or null if extraction wasn't
+ * possible (CORS-blocked image, load failure, etc.) — callers should treat
+ * null as "keep whatever color is already showing."
+ */
+function extractDominantColor(imageUrl) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const size = 24;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, size, size);
+        const { data } = ctx.getImageData(0, 0, size, size);
+
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] < 200) continue; // skip transparent pixels
+          const rr = data[i], gg = data[i + 1], bb = data[i + 2];
+          const luminance = 0.299 * rr + 0.587 * gg + 0.114 * bb;
+          if (luminance < 20 || luminance > 235) continue; // skip near-black/white
+          r += rr; g += gg; b += bb; count++;
+        }
+        if (count === 0) {
+          resolve(null);
+          return;
+        }
+        resolve(`${Math.round(r / count)}, ${Math.round(g / count)}, ${Math.round(b / count)}`);
+      } catch (e) {
+        resolve(null); // canvas tainted by a non-CORS image, or similar
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = imageUrl;
+  });
+}
