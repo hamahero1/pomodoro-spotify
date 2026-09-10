@@ -15,6 +15,8 @@ const Tasks = {
       this.createTask();
     });
 
+    TaskDatePicker.init(this.dateInput);
+
     this.refresh();
   },
 
@@ -39,6 +41,7 @@ const Tasks = {
       });
       this.titleInput.value = "";
       this.minutesInput.value = "";
+      TaskDatePicker.clear();
       await this.refresh();
       if (typeof Dashboard !== "undefined") Dashboard.refresh();
     } catch (e) {
@@ -185,6 +188,103 @@ const Tasks = {
     btn.textContent = label;
     btn.addEventListener("click", onClick);
     return btn;
+  },
+};
+
+/* A calendar-popup date picker for the task date field — click a day on a
+ * real calendar grid instead of typing day/month/year into a native input. */
+const TaskDatePicker = {
+  selectedDate: null, // "YYYY-MM-DD" or null
+  viewYear: new Date().getFullYear(),
+  viewMonth: new Date().getMonth(),
+
+  init(hiddenInput) {
+    this.hiddenInput = hiddenInput;
+    this.btn = document.getElementById("task-date-btn");
+    this.popup = document.getElementById("task-date-popup");
+    this.monthLabel = document.getElementById("task-date-month-label");
+    this.gridEl = document.getElementById("task-date-grid");
+    this.clearBtn = document.getElementById("task-date-clear");
+
+    this.btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.popup.classList.toggle("hidden");
+      if (!this.popup.classList.contains("hidden")) this.render();
+    });
+    document.getElementById("task-date-prev").addEventListener("click", () => this.changeMonth(-1));
+    document.getElementById("task-date-next").addEventListener("click", () => this.changeMonth(1));
+    this.clearBtn.addEventListener("click", () => {
+      this.clear();
+      this.popup.classList.add("hidden");
+    });
+    document.addEventListener("click", (e) => {
+      if (!this.popup.contains(e.target) && e.target !== this.btn) {
+        this.popup.classList.add("hidden");
+      }
+    });
+  },
+
+  changeMonth(delta) {
+    this.viewMonth += delta;
+    if (this.viewMonth < 0) {
+      this.viewMonth = 11;
+      this.viewYear -= 1;
+    } else if (this.viewMonth > 11) {
+      this.viewMonth = 0;
+      this.viewYear += 1;
+    }
+    this.render();
+  },
+
+  select(dateStr) {
+    this.selectedDate = dateStr;
+    this.hiddenInput.value = dateStr;
+    const d = new Date(dateStr + "T00:00:00");
+    this.btn.textContent = "📅 " + d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    this.popup.classList.add("hidden");
+  },
+
+  clear() {
+    this.selectedDate = null;
+    this.hiddenInput.value = "";
+    this.btn.textContent = "📅 Date";
+  },
+
+  render() {
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
+    ];
+    this.monthLabel.textContent = `${monthNames[this.viewMonth]} ${this.viewYear}`;
+
+    this.gridEl.innerHTML = "";
+    ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].forEach((d) => {
+      const el = document.createElement("div");
+      el.className = "dow";
+      el.textContent = d;
+      this.gridEl.appendChild(el);
+    });
+
+    const firstDay = new Date(this.viewYear, this.viewMonth, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(this.viewYear, this.viewMonth + 1, 0).getDate();
+    const todayStr = todayISO();
+
+    for (let i = 0; i < startWeekday; i++) {
+      const el = document.createElement("div");
+      el.className = "calendar-day empty";
+      this.gridEl.appendChild(el);
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${this.viewYear}-${String(this.viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const el = document.createElement("div");
+      el.className = "calendar-day";
+      if (dateStr === todayStr) el.classList.add("today");
+      if (dateStr === this.selectedDate) el.classList.add("selected");
+      el.textContent = day;
+      el.addEventListener("click", () => this.select(dateStr));
+      this.gridEl.appendChild(el);
+    }
   },
 };
 

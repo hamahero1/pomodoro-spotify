@@ -371,7 +371,7 @@ textarea:focus {
   background: rgba(0, 0, 0, 0.22);
   border-radius: var(--radius-md);
   padding: 1rem;
-  font-size: 0.88rem;
+  font-size: 1.05rem;
   line-height: 1.7;
   color: var(--text-dim);
   white-space: pre-wrap;
@@ -412,7 +412,7 @@ textarea:focus {
      only the active word needs to stand out, not the rest of the line. */
   color: var(--text-dim);
   transition: color var(--transition);
-  font-size: 0.86rem;
+  font-size: 1.05rem;
   cursor: pointer;
   border-radius: var(--radius-sm);
   padding: 0.15rem 0.3rem;
@@ -657,6 +657,42 @@ textarea:focus {
 }
 .task-add-form input[type="number"] {
   width: 70px;
+}
+
+/* Calendar-popup date picker (used for both the task date field and,
+ * with the same markup pattern, could back any other date field later) */
+.date-field-wrap {
+  position: relative;
+}
+.date-popup {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  width: 240px;
+  background: #141615;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  padding: 0.7rem;
+}
+.date-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.date-popup-header span {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.date-popup .calendar-grid {
+  grid-auto-rows: 30px;
+}
+.date-popup-clear {
+  width: 100%;
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
 }
 
 .task-list {
@@ -927,6 +963,31 @@ textarea:focus {
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--text-faint);
+}
+.notes-folder-row {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0 0.9rem 0.6rem;
+}
+.notes-folder-row select {
+  flex: 1;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.5rem;
+  color: var(--text);
+  font-size: 0.78rem;
+}
+.notes-folder-row .btn-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 0.7rem;
+}
+.notes-file-item .nfi-folder-tag {
+  font-size: 0.66rem;
+  color: var(--text-faint);
+  margin-left: 0.3rem;
 }
 .notes-file-list {
   list-style: none;

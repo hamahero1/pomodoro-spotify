@@ -103,7 +103,9 @@ dark, glassy, minimal, satisfying to look at — not a bare HTML form.
       own Start button and independent timer
 - [ ] Parent task's total time = sum of its subtasks' logged time (plus any
       time logged directly on the parent)
-- [ ] Assign a date to a task (so it shows up on the dashboard calendar)
+- [x] Assign a date to a task via a **calendar-popup picker** (click a day
+      on a real calendar grid, not typed day/month/year) — shows up on the
+      dashboard calendar
 - [ ] Mark task/subtask as Done
 
 ### Dashboard (bottom-left)
@@ -120,6 +122,12 @@ dark, glassy, minimal, satisfying to look at — not a bare HTML form.
       previously saved notes (filenames/titles), right side = text editor
       block
 - [ ] Write freely, then **Save** → stored as a **Markdown (.md)** file
+- [x] **Folders:** organize notes into folders (real subdirectories on
+      disk); a dropdown filters the sidebar to All Notes / a specific
+      folder / notes with no folder, plus a button to create a new one
+- [x] **Unique names per folder:** creating or renaming a note to a title
+      already used in that folder auto-appends "1", "2", ... instead of
+      colliding (e.g. "note" → "note 1" → "note 2")
 - [ ] Click a note in the left sidebar to open/edit it; new notes get their
       own file
 - [ ] Close overlay to return to the main dashboard

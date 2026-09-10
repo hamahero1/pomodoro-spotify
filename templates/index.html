@@ -139,7 +139,19 @@
       <form id="task-add-form" class="task-add-form">
         <input type="text" id="task-title-input" placeholder="New task…" required>
         <input type="number" id="task-minutes-input" placeholder="min" min="0">
-        <input type="date" id="task-date-input">
+        <div class="date-field-wrap">
+          <button type="button" id="task-date-btn" class="btn" title="Pick a date">📅 Date</button>
+          <input type="hidden" id="task-date-input" value="">
+          <div id="task-date-popup" class="date-popup hidden">
+            <div class="date-popup-header">
+              <button type="button" id="task-date-prev" class="btn btn-icon">‹</button>
+              <span id="task-date-month-label"></span>
+              <button type="button" id="task-date-next" class="btn btn-icon">›</button>
+            </div>
+            <div class="calendar-grid" id="task-date-grid"></div>
+            <button type="button" id="task-date-clear" class="btn date-popup-clear">Clear date</button>
+          </div>
+        </div>
         <button type="submit" class="btn btn-primary">Add</button>
       </form>
       <ul class="task-list" id="task-list"></ul>
@@ -155,6 +167,10 @@
         <div class="notes-sidebar-header">
           <span>Saved notes</span>
           <button id="notes-new" class="btn btn-icon" type="button" title="New note">＋</button>
+        </div>
+        <div class="notes-folder-row">
+          <select id="notes-folder-select" title="Folder"></select>
+          <button id="notes-new-folder" class="btn btn-icon" type="button" title="New folder">📁+</button>
         </div>
         <ul class="notes-file-list" id="notes-file-list"></ul>
       </div>

@@ -88,12 +88,28 @@ class TimerSession(db.Model):
         }
 
 
+class NoteFolder(db.Model):
+    __tablename__ = "note_folder"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
+
+    def to_dict(self) -> dict:
+        return {"id": self.id, "name": self.name, "created_at": self.created_at.isoformat()}
+
+
 class Note(db.Model):
     __tablename__ = "note"
+    # A note's title must be unique within its folder (NULL folder = root) —
+    # enforced at creation/rename time in notes/routes.py by auto-appending
+    # "1", "2", ... on collision, not by a hard DB constraint (so we control
+    # the friendly auto-rename instead of a raw integrity error).
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     filename = db.Column(db.String(255), nullable=False, unique=True)
+    folder = db.Column(db.String(100), nullable=True)  # NoteFolder.name, or NULL for root
     created_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
@@ -102,6 +118,7 @@ class Note(db.Model):
             "id": self.id,
             "title": self.title,
             "filename": self.filename,
+            "folder": self.folder,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
         }
