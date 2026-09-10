@@ -119,3 +119,19 @@ function extractDominantColor(imageUrl) {
     img.src = imageUrl;
   });
 }
+
+// Live wall-clock in the topbar (the real current time — distinct from the
+// Pomodoro countdown and the song's own timeline, both shown elsewhere).
+(function startTopbarClock() {
+  const el = document.getElementById("topbar-clock");
+  if (!el) return;
+  const render = () => {
+    el.textContent = new Date().toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+  render();
+  setInterval(render, 1000);
+})();

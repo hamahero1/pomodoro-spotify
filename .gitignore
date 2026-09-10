@@ -18,7 +18,11 @@ dist/
 *.sqlite3
 instance/
 
-# Notes (user content, not source)
+# Notes (user content, not source) — ** matches folder subdirectories too
+# (notes/files/<folder>/*.md), unlike the plain * this used before, which
+# only covered files directly in notes/files/ and let a personal note
+# saved into a folder slip through as an untracked file ready to be added.
+notes/files/**/*.md
 notes/files/*.md
 !notes/files/.gitkeep
 

@@ -107,6 +107,13 @@ input {
   font-size: 0.85rem;
   margin-left: 0.35rem;
 }
+.topbar-clock {
+  margin-left: auto;
+  font-size: 1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
 
 /* ---------- Grid layout ---------- */
 .app-grid {
@@ -437,14 +444,17 @@ textarea:focus {
   color: color-mix(in srgb, rgb(var(--dynamic-color)) 45%, white);
 }
 .lyrics-box.lyrics-synced .lyric-word {
-  transition: color 320ms ease, font-weight 320ms ease, text-shadow 320ms ease;
+  transition: color 320ms ease, text-shadow 320ms ease;
 }
 .lyrics-box.lyrics-synced .lyric-word.active-word {
   /* Brighter than the line on purpose — near-white core color plus a
      glow in the same hue, so the current word is unmistakable at a
-     glance instead of blending into the line around it. */
+     glance instead of blending into the line around it. No font-weight
+     change: many fonts (Arabic scripts especially) don't have a true
+     bold cut, so the browser silently swaps in a different font file
+     for the heavier weight, making the word look like mismatched
+     typography instead of just "emphasized". Color + glow is enough. */
   color: color-mix(in srgb, rgb(var(--dynamic-color)) 80%, white);
-  font-weight: 800;
   text-shadow: 0 0 12px rgba(var(--dynamic-color), 0.7);
 }
 
