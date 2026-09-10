@@ -446,6 +446,13 @@ textarea:focus {
 .lyrics-box.lyrics-synced .lyric-word {
   transition: color 320ms ease, text-shadow 320ms ease;
 }
+.lyrics-box.lyrics-synced .lyric-word.sung {
+  /* Words already passed within the current line — brighter/whiter than
+     the not-yet-reached rest of the line, but a step below the actively
+     glowing word. Progressively fills the line as playback continues,
+     instead of only ever lighting up one word at a time. */
+  color: color-mix(in srgb, var(--text) 65%, rgb(var(--dynamic-color)) 35%);
+}
 .lyrics-box.lyrics-synced .lyric-word.active-word {
   /* Brighter than the line on purpose — near-white core color plus a
      glow in the same hue, so the current word is unmistakable at a

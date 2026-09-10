@@ -329,7 +329,15 @@ const SpotifyPanel = {
 
     const lines = this.lyricsBox.children;
     if (idx !== this.activeLineIndex) {
+      // Moving to a new line — reset the previous line's progressive fill
+      // (it shouldn't stay lit once we've moved past it) before the new
+      // line starts accumulating its own highlight from scratch.
+      const prevLineEl = lines[this.activeLineIndex];
+      if (prevLineEl) {
+        prevLineEl.querySelectorAll(".lyric-word").forEach((w) => w.classList.remove("sung", "active-word"));
+      }
       this.activeLineIndex = idx;
+      this._activeWordEl = null;
       for (let i = 0; i < lines.length; i++) {
         lines[i].classList.toggle("current-line", i === idx);
       }
@@ -352,8 +360,16 @@ const SpotifyPanel = {
     const activeWordEl = words[activeWordIdx];
 
     if (activeWordEl === this._activeWordEl) return;
-    if (this._activeWordEl) this._activeWordEl.classList.remove("active-word");
-    activeWordEl.classList.add("active-word");
+
+    // Progressive fill: every word already passed within this line keeps
+    // its brighter "sung" highlight instead of reverting to dim — only
+    // the single current word gets the glowing active treatment. Resets
+    // when the line changes (handled above), continues through to the
+    // line's end otherwise.
+    words.forEach((w, i) => {
+      w.classList.toggle("sung", i < activeWordIdx);
+      w.classList.toggle("active-word", i === activeWordIdx);
+    });
     this._activeWordEl = activeWordEl;
   },
 
