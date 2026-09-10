@@ -431,16 +431,21 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.05);
 }
 .lyrics-box.lyrics-synced .lyric-line.current-line {
-  /* Lighter tint of the album-art color (or green when nothing's playing)
-     instead of a fixed color, so it always matches the active-word below. */
-  color: color-mix(in srgb, rgb(var(--dynamic-color)) 60%, white);
+  /* A soft, pale tint of the album-art color (or green) — visible against
+     the faint other lines, but deliberately muted so the active word
+     below still clearly stands out as the brighter one. */
+  color: color-mix(in srgb, rgb(var(--dynamic-color)) 45%, white);
 }
 .lyrics-box.lyrics-synced .lyric-word {
-  transition: color 320ms ease, font-weight 320ms ease;
+  transition: color 320ms ease, font-weight 320ms ease, text-shadow 320ms ease;
 }
 .lyrics-box.lyrics-synced .lyric-word.active-word {
-  color: rgb(var(--dynamic-color));
-  font-weight: 700;
+  /* Brighter than the line on purpose — near-white core color plus a
+     glow in the same hue, so the current word is unmistakable at a
+     glance instead of blending into the line around it. */
+  color: color-mix(in srgb, rgb(var(--dynamic-color)) 80%, white);
+  font-weight: 800;
+  text-shadow: 0 0 12px rgba(var(--dynamic-color), 0.7);
 }
 
 /* Playlist browser (in-panel, replaces now-playing/lyrics while open) */
